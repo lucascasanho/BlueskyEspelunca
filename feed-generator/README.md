@@ -6,7 +6,9 @@ O feed aceita somente posts marcados como `pt-BR` ou `pt` e que tenham sinal de 
 
 Antes da publicação, ele aplica filtros baratos de idioma, tema, domínios bloqueados, marcadores explícitos de conteúdo gerado por IA e rótulos de hate/harassment/spam/scam. Os candidatos então passam por um classificador de toxicidade executado localmente e, quando há imagem/vídeo, por um classificador local de mídia sintética.
 
-A decisão de mídia é conservadora: quando uma imagem/miniatura não pode ser inspecionada, o padrão `AI_MEDIA_UNKNOWN_ACTION=drop` remove o post do feed. O detector de IA não é prova forense; é uma camada probabilística.
+Importante: o modelo padrão de toxicidade é multilíngue e sua documentação lista 14 idiomas, sem incluir português. Portanto, ele é usado como camada adicional de segurança, não como garantia de detecção perfeita de toxicidade em PT-BR. A variável `TOXICITY_MODEL` permite substituir o modelo por outro mais adequado ao português em uma evolução posterior.
+
+A decisão de mídia é conservadora: quando uma imagem/miniatura não pode ser inspecionada, o padrão `AI_MEDIA_UNKNOWN_ACTION=drop` remove o post do feed. O detector de IA também é probabilístico e pode produzir falsos positivos e falsos negativos.
 
 ## Serviço
 
