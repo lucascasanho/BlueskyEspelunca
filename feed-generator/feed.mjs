@@ -135,6 +135,8 @@ async function start() {
   const del=d.prepare('DELETE FROM post WHERE uri=?')
   const pending=d.prepare("SELECT * FROM post WHERE status='pending' ORDER BY insertedAt ASC LIMIT 1")
   const count=d.prepare("SELECT COUNT(*) count FROM post WHERE status='pending'")
+  const stats=d.prepare("SELECT status,COUNT(*) count FROM post GROUP BY status")
+  const reasons=d.prepare("SELECT reason,COUNT(*) count FROM post WHERE status='rejected' GROUP BY reason ORDER BY count DESC LIMIT 10")
   const mark=d.prepare('UPDATE post SET status=?,toxicityScore=?,aiScore=?,reason=? WHERE uri=?')
   const purge=d.prepare("DELETE FROM post WHERE createdAt < datetime('now', ?)")
   async function worker(){
@@ -169,7 +171,11 @@ async function start() {
   void worker(); void ingest()
   setInterval(()=>{try{purge.run(`-${RETENTION_DAYS} days`)}catch{}},3600000)
   const app=express(); app.disable('x-powered-by')
-  app.get('/health',(_q,s)=>s.json({ok:true,publisherConfigured:Boolean(PUBLISHER_DID),feed:feedUri(),pending:Number(count.get().count)}))
+  app.get('/health',(_q,s)=>{
+    const byStatus=Object.fromEntries(stats.all().map(x=>[x.status,Number(x.count)]))
+    const rejectedByReason=Object.fromEntries(reasons.all().map(x=>[x.reason||'unknown',Number(x.count)]))
+    s.json({ok:true,publisherConfigured:Boolean(PUBLISHER_DID),feed:feedUri(),pending:byStatus.pending??0,accepted:byStatus.accepted??0,rejected:byStatus.rejected??0,rejectedByReason})
+  })
   app.get('/.well-known/did.json',(_q,s)=>s.json({'@context':['https://www.w3.org/ns/did/v1'],id:SERVICE_DID,service:[{id:'#bsky_fg',type:'BskyFeedGenerator',serviceEndpoint:`https://${HOSTNAME}`}] }))
   app.get('/xrpc/app.bsky.feed.describeFeedGenerator',(_q,s)=>s.json({did:SERVICE_DID,feeds:feedUri()?[{uri:feedUri()}]:[]}))
   app.get('/xrpc/app.bsky.feed.getFeedSkeleton',(q,s)=>{
