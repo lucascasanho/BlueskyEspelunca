@@ -29,8 +29,9 @@ case "${1:-}" in
     source "${FEED_ENV_FILE}"
     sudo -u espelunca env FEEDGEN_APPVIEW_URL="${FEEDGEN_APPVIEW_URL}" FEEDGEN_SQLITE_LOCATION="${FEEDGEN_SQLITE_LOCATION}" FEEDGEN_DATA_DIR="${FEEDGEN_DATA_DIR}" FEEDGEN_ENV_FILE="${FEED_ENV_FILE}" FEEDGEN_SEED_LIMIT="${FEEDGEN_SEED_LIMIT:-100}" node "${FEED_DIR}/feed.mjs" seed
     ;;
+  tunnel) exec "${ROOT_DIR}/scripts/configure-feed-tunnel.sh" ;;
   *)
-    echo "Uso: bluesky feed {install|start|stop|restart|status|logs|publish|seed}"
+    echo "Uso: bluesky feed {install|start|stop|restart|status|logs|publish|seed|tunnel}"
     exit 2
     ;;
 esac
