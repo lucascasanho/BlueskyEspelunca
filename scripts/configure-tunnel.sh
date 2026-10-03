@@ -82,8 +82,6 @@ rules = [
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
     "    service: http://127.0.0.1:{}".format(web_port),
-    "  - hostname: {}".format(pds_host),
-    "    service: http://127.0.0.1:{}".format(web_port),
 ]
 if ozone_enabled == "true" and ozone_host:
     rules.extend([
@@ -114,6 +112,9 @@ echo "  https://${PDS_HOSTNAME}/.well-known/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
-if [[ "${OZONE_TUNNEL_ENABLED:-false}" == "true" ]]; then\n  echo "  https://${OZONE_HOSTNAME}/* -> http://127.0.0.1:${OZONE_PORT}"\nfi\necho "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
+if [[ "${OZONE_TUNNEL_ENABLED:-false}" == "true" ]]; then
+  echo "  https://${OZONE_HOSTNAME}/* -> http://127.0.0.1:${OZONE_PORT}"
+fi
+echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
 echo
 echo "Os registros DNS precisam existir no Cloudflare."
