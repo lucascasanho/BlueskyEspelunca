@@ -479,7 +479,7 @@ replacement="""          <Link
             label={l__BT__Trending options__BT__}
             onPress={() => trendingPrompt.open()}
           />"""
-marker=marker.replace("__BT__",String.fromCharCode(96))
+marker=marker.replace("__BT__",chr(96))
 replacement=replacement.replace("__BT__",String.fromCharCode(96))
 if marker not in text: raise SystemExit("Explore header marker não encontrado")
 text=text.replace(marker,replacement,1)
