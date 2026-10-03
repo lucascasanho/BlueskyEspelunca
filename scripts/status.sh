@@ -9,6 +9,8 @@ echo "============================================================"
 echo
 echo "PDS: https://${PDS_HOSTNAME}"
 echo "Web: https://${APP_HOSTNAME}"
+echo "PDS local: http://127.0.0.1:${PDS_PORT}"
+echo "Web local: http://127.0.0.1:${WEB_PORT}"
 echo
 
 echo "--- systemd ---"
@@ -21,6 +23,23 @@ sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' 
 
 echo
 echo "--- PDS health local ---"
-curl -kfsS --max-time 10 "https://127.0.0.1/xrpc/_health" || true
+if curl -fsS --max-time 10 "http://127.0.0.1:${PDS_PORT}/xrpc/_health"; then
+  echo
+  echo "PDS local: OK"
+else
+  echo
+  echo "PDS local: FALHA"
+fi
+
 echo
+echo "--- Web local ---"
+if curl -fsSI --max-time 10 "http://127.0.0.1:${WEB_PORT}/" >/dev/null; then
+  echo "Web local: OK"
+else
+  echo "Web local: FALHA"
+fi
+
 echo
+echo "--- portas ---"
+sudo ss -ltnp "sport = :${PDS_PORT}" || true
+sudo ss -ltnp "sport = :${WEB_PORT}" || true
