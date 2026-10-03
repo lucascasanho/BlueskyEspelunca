@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'EOF'
+Uso:
+  bluesky update
+  bluesky status
+  bluesky install
+  bluesky start
+  bluesky stop
+  bluesky tunnel
+  bluesky account
+
+Comandos:
+  update   Atualiza este repositório e aplica a atualização do BlueskyEspelunca.
+  status   Mostra o estado do PDS e do Web.
+  install  Executa a instalação.
+  start    Inicia o Web.
+  stop     Para o Web.
+  tunnel   Configura/valida o Cloudflare Tunnel existente.
+  account  Cria uma conta no PDS.
+EOF
+}
+
+if [[ ! -d "${ROOT_DIR}/.git" ]]; then
+  echo "ERRO: BlueskyEspelunca não está em um clone Git."
+  exit 1
+fi
+
+command="${1:-}"
+
+case "${command}" in
+  update)
+    echo "==> Atualizando o repositório BlueskyEspelunca"
+    git -C "${ROOT_DIR}" pull --ff-only
+    exec "${ROOT_DIR}/scripts/update.sh"
+    ;;
+  status)
+    exec "${ROOT_DIR}/scripts/status.sh"
+    ;;
+  install)
+    exec "${ROOT_DIR}/install.sh"
+    ;;
+  start)
+    exec "${ROOT_DIR}/scripts/start-web.sh"
+    ;;
+  stop)
+    exec "${ROOT_DIR}/scripts/stop-web.sh"
+    ;;
+  tunnel)
+    exec "${ROOT_DIR}/scripts/configure-tunnel.sh"
+    ;;
+  account)
+    exec "${ROOT_DIR}/scripts/create-account.sh"
+    ;;
+  ""|-h|--help|help)
+    usage
+    ;;
+  *)
+    echo "Comando desconhecido: ${command}"
+    echo
+    usage
+    exit 2
+    ;;
+esac
