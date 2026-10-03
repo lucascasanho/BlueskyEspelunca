@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-: "${APP_HOSTNAME:?APP_HOSTNAME não definido}"
 : "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
 : "${INSTALL_DIR:?INSTALL_DIR não definido}"
 : "${APP_DIR:?APP_DIR não definido}"
@@ -65,7 +64,7 @@ text = text.replace(old_did, f"export const BSKY_SERVICE_DID = 'did:web:{pds}'")
 path.write_text(text)
 PY
 
-python3 - "${APP_HOSTNAME}" <<'PY'
+python3 - "${PDS_HOSTNAME}" <<'PY'
 from pathlib import Path
 import sys
 
@@ -127,4 +126,4 @@ ${SUDO} systemctl restart espelunca-web
 
 echo
 echo "Web local: http://127.0.0.1:${WEB_PORT}"
-echo "Host público esperado: https://${APP_HOSTNAME}"
+echo "Host público esperado: https://${PDS_HOSTNAME}"
