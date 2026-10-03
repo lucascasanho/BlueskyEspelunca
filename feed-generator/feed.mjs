@@ -1,6 +1,6 @@
 import express from 'express'
 import Database from 'better-sqlite3'
-import { Jetstream, isDelete, isPut } from '@bsky/jetstream'
+import { Jetstream } from '@bsky/jetstream'
 import { env, pipeline, RawImage } from '@huggingface/transformers'
 import { createInterface } from 'node:readline/promises'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -48,7 +48,7 @@ let aiPipe
 
 const norm = (v = '') => String(v).normalize('NFKC').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim()
 const textOf = (r) => norm([r?.text,r?.embed?.external?.title,r?.embed?.external?.description].filter(Boolean).join(' '))
-const isPtBr = (r) => (r?.langs ?? []).map(String).some((l) => ['pt-br','pt'].includes(l.toLowerCase()))
+const isPtBr = (r) => (r?.langs ?? []).map(String).some((l) => l.toLowerCase() === 'pt-br')
 const urlsOf = (r) => {
   const out = new Set()
   for (const u of String(r?.text ?? '').match(/https?:\/\/[^\s<>()\[\]{}]+/gi) ?? []) out.add(u.replace(/[.,!?;:]+$/g,''))
@@ -156,9 +156,10 @@ async function start() {
   async function ingest(){
     const js=new Jetstream(JETSTREAM)
     for await(const evt of js.live({kinds:['commit'],collections:['app.bsky.feed.post']})){
+      if(!evt?.commit || evt.commit.collection!=='app.bsky.feed.post')continue
       const uri=`at://${evt.did}/app.bsky.feed.post/${evt.commit.rkey}`
-      if(isDelete(evt,'app.bsky.feed.post')){del.run(uri);continue}
-      if(!isPut(evt,'app.bsky.feed.post'))continue
+      if(evt.commit.operation==='delete'){del.run(uri);continue}
+      if(evt.commit.operation!=='create' && evt.commit.operation!=='update')continue
       const r=evt.commit.record; if(!r)continue
       const reason=cheapFilter(r); if(reason)continue
       const t=topic(r)
