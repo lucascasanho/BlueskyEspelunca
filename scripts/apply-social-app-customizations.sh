@@ -26,7 +26,8 @@ if [[ -d "${PATCH_DIR}" ]]; then
   done
 fi
 
-python3 - "${PDS_HOSTNAME}" <<'PY'
+
+python3 - "\${PDS_HOSTNAME}" <<'PY'
 from pathlib import Path
 import sys
 
@@ -38,8 +39,6 @@ desired_service = f"export const BSKY_SERVICE = 'https://{pds}'"
 desired_did = f"export const BSKY_SERVICE_DID = 'did:web:{pds}'"
 desired_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
 
-# Keep this step idempotent: the upstream file may already contain our
-# customization from a previous build.
 if desired_service in text and desired_did in text and desired_default in text:
     path.write_text(text)
     raise SystemExit(0)
@@ -50,21 +49,19 @@ old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
 if old_service not in text or old_did not in text or desired_default not in text:
     raise SystemExit("Não foi possível localizar os padrões de serviço padrão no upstream.")
 
-text = text.replace(old_service, desired_service)
-text = text.replace(old_did, desired_did)
+text = text.replace(old_service, desired_service, 1)
+text = text.replace(old_did, desired_did, 1)
 
-if desired_service not in text:
-    raise SystemExit("Falha ao configurar BSKY_SERVICE para o PDS da Espelunca.")
-if desired_did not in text:
-    raise SystemExit("Falha ao configurar BSKY_SERVICE_DID para o PDS da Espelunca.")
+if desired_service not in text or desired_did not in text:
+    raise SystemExit("Falha ao configurar o PDS da Espelunca.")
+
 path.write_text(text)
 PY
 
-python3 - "${PDS_HOSTNAME}" <<'PY'
+python3 <<'PY'
 from pathlib import Path
-import sys
+import re
 
-host = sys.argv[1]
 path = Path("app.config.js")
 text = path.read_text()
 
@@ -74,64 +71,60 @@ replacements = {
     "scheme: 'bluesky'": "scheme: 'espelunca'",
     "bundleIdentifier: 'xyz.blueskyweb.app'": "bundleIdentifier: 'blue.espelunca.app'",
     "package: 'xyz.blueskyweb.app'": "package: 'blue.espelunca.app'",
-    "'applinks:bsky.app',": f"'applinks:{host}',",
-    "host: 'bsky.app',": f"host: '{host}',",
+    "host: 'bsky.app',": "host: 'espelunca.blue',",
+    "'applinks:bsky.app',": "'applinks:espelunca.blue',",
 }
 
 for old, new in replacements.items():
     text = text.replace(old, new)
 
+text = re.sub(
+    r"CFBundleSpokenName:\s*'[^']*'",
+    "CFBundleSpokenName: 'Espelunca'",
+    text,
+    count=1,
+)
+
 path.write_text(text)
 PY
 
-python3 - <<'PY'
-from pathlib import Path
-
-# Make the hosting-provider name match the Espelunca-branded PDS in the signup UI.
 python3 <<'PY'
 from pathlib import Path
 
 path = Path("src/lib/strings/url-helpers.ts")
 text = path.read_text()
 
-old = """  if (\`https://\${urlp.host}\` === BSKY_SERVICE) {
-      return 'Bluesky Social'
-    }"""
-new = """  if (\`https://\${urlp.host}\` === BSKY_SERVICE) {
-      return urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'
-    }"""
+old = "      return 'Bluesky Social'"
+new = "      return urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'"
 
-if old not in text:
-    raise SystemExit("Não foi possível localizar o nome padrão do provedor no upstream.")
+if "urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'" not in text:
+    if old not in text:
+        raise SystemExit("Não foi possível configurar o nome do provedor no signup.")
+    text = text.replace(old, new, 1)
 
-path.write_text(text.replace(old, new, 1))
-PY
+path.write_text(text)
 
 path = Path("src/state/persisted/schema.ts")
 text = path.read_text()
 
-old = "  darkTheme: 'dim',"
-new = "  darkTheme: 'dark',"
-
-if old not in text:
+if "  darkTheme: 'dim'," in text:
+    text = text.replace("  darkTheme: 'dim',", "  darkTheme: 'dark',", 1)
+elif "  darkTheme: 'dark'," not in text:
     raise SystemExit("Não foi possível localizar o tema escuro padrão no upstream.")
 
-path.write_text(text.replace(old, new, 1))
+path.write_text(text)
 PY
 
-
-# Replace Bluesky visual marks with the Espelunca icon and name.
 python3 "\${ROOT_DIR}/espelunca-icon.svg" <<'PY'
 from pathlib import Path
 import re
 import sys
 
-icon_path = Path(sys.argv[1])
-icon = icon_path.read_text()
-icon_match = re.search(r"<path\b[^>]*\bd=\"([^\"]+)\"", icon, re.IGNORECASE)
-if not icon_match:
+icon = Path(sys.argv[1]).read_text()
+match = re.search(r"<path\b[^>]*\bd=\"([^\"]+)\"", icon, re.IGNORECASE)
+if not match:
     raise SystemExit("Não foi possível extrair o path do espelunca-icon.svg.")
-icon_d = icon_match.group(1)
+icon_d = match.group(1)
 
 def replace_path_d(path: Path, pattern: str, label: str) -> None:
     text = path.read_text()
@@ -143,10 +136,9 @@ def replace_path_d(path: Path, pattern: str, label: str) -> None:
 
 logo = Path("src/view/icons/Logo.tsx")
 logo_text = logo.read_text()
-if "const ratio = 57 / 64" in logo_text:
-    logo_text = logo_text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
-if 'viewBox="0 0 64 57"' in logo_text:
-    logo_text = logo_text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
+logo_text = logo_text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
+logo_text = logo_text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
+logo_text = logo_text.replace('accessibilityLabel="Bluesky"', 'accessibilityLabel="Espelunca"', 1)
 logo.write_text(logo_text)
 replace_path_d(
     logo,
@@ -156,10 +148,8 @@ replace_path_d(
 
 mark = Path("src/view/icons/Logomark.tsx")
 mark_text = mark.read_text()
-if "const ratio = 54 / 61" in mark_text:
-    mark_text = mark_text.replace("const ratio = 54 / 61", "const ratio = 1", 1)
-if 'viewBox="0 0 61 54"' in mark_text:
-    mark_text = mark_text.replace('viewBox="0 0 61 54"', 'viewBox="0 0 640 640"', 1)
+mark_text = mark_text.replace("const ratio = 54 / 61", "const ratio = 1", 1)
+mark_text = mark_text.replace('viewBox="0 0 61 54"', 'viewBox="0 0 640 640"', 1)
 mark.write_text(mark_text)
 replace_path_d(
     mark,
@@ -244,8 +234,7 @@ export function LogomarkWithType({
 
 splash = Path("src/Splash.tsx")
 splash_text = splash.read_text()
-if 'viewBox="0 0 64 66"' in splash_text:
-    splash_text = splash_text.replace('viewBox="0 0 64 66"', 'viewBox="0 0 640 640"', 1)
+splash_text = splash_text.replace('viewBox="0 0 64 66"', 'viewBox="0 0 640 640"', 1)
 splash_text = splash_text.replace("const height = width * (67 / 64)", "const height = width", 1)
 splash.write_text(splash_text)
 replace_path_d(
@@ -253,19 +242,7 @@ replace_path_d(
     r'(<Path\s*\n\s*fill=\{props\.fill \|\| \x27#fff\x27\}\s*\n\s*d=")([^"]+)(")',
     "o desenho do logo do splash",
 )
-
-app_config = Path("app.config.js")
-app_text = app_config.read_text()
-app_text, count = re.sub(
-    r"CFBundleSpokenName:\s*'[^']*'",
-    "CFBundleSpokenName: 'Espelunca'",
-    app_text,
-    count=1,
-)
-if count != 1:
-    raise SystemExit("Não foi possível configurar CFBundleSpokenName.")
-app_config.write_text(app_text)
-
 PY
 
+echo "==> Customizações de código/configuração aplicadas."
 echo "==> Customizações de código/configuração aplicadas."
