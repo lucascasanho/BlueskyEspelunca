@@ -1,0 +1,58 @@
+name: Validate Espelunca Ozone Labeler
+
+on:
+  push:
+    branches:
+      - feature/ozone-labeler
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate shell syntax
+        run: |
+          bash -n bluesky
+          bash -n scripts/apply-labeler-customizations.sh
+          bash -n scripts/install-ozone.sh
+          bash -n scripts/ozone.sh
+          bash -n scripts/configure-tunnel.sh
+          bash -n scripts/build-web.sh
+          bash -n scripts/status.sh
+
+      - name: Validate Ozone Compose
+        run: |
+          mkdir -p /tmp/espelunca-ozone
+          printf '%s\n' 'POSTGRES_USER=postgres' > /tmp/espelunca-ozone/postgres.env
+          printf '%s\n' 'OZONE_PORT=3300' > /tmp/espelunca-ozone/ozone.env
+          OZONE_DB_PORT=5440 \
+          OZONE_DATA_DIR=/tmp/espelunca-ozone \
+          POSTGRES_ENV_FILE=/tmp/espelunca-ozone/postgres.env \
+          OZONE_ENV_FILE=/tmp/espelunca-ozone/ozone.env \
+          docker compose -f deploy/ozone-compose.yaml config >/dev/null
+
+      - name: Validate social-app customization against upstream
+        run: |
+          tmp="$(mktemp -d)"
+          git clone --depth=1 https://github.com/bluesky-social/social-app.git "$tmp/social-app"
+
+          cat > "$tmp/config.env" <<EOF
+          APP_DIR=$tmp/social-app
+          ESPELUNCA_LABELER_DID=did:plc:example
+          EOF
+
+          bash scripts/apply-labeler-customizations.sh
+
+          grep -q "const ESPELUNCA_LABELER_DID = 'did:plc:example'" \
+            "$tmp/social-app/src/state/session/create-account.ts"
+          grep -q "addLabeler" \
+            "$tmp/social-app/src/state/session/create-account.ts"
+          grep -q "saveLabelers(accountDid" \
+            "$tmp/social-app/src/state/session/create-account.ts"
+          grep -q "initializeEspeluncaLabeler" \
+            "$tmp/social-app/src/state/session/create-account.ts"
