@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 set -a
-source "\${ROOT_DIR}/config.env"
+source "${ROOT_DIR}/config.env"
 set +a
 
-: "\${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
-: "\${APP_DIR:?APP_DIR não definido}"
+: "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
+: "${APP_DIR:?APP_DIR não definido}"
 
-cd "\${APP_DIR}"
+cd "${APP_DIR}"
 
 echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
 
-PATCH_DIR="\${ROOT_DIR}/patches/social-app"
-if [[ -d "\${PATCH_DIR}" ]]; then
+PATCH_DIR="${ROOT_DIR}/patches/social-app"
+if [[ -d "${PATCH_DIR}" ]]; then
   shopt -s nullglob
-  patches=("\${PATCH_DIR}"/*.patch)
+  patches=("${PATCH_DIR}"/*.patch)
   shopt -u nullglob
-  for patch in "\${patches[@]}"; do
-    echo "==> Aplicando patch: $(basename "\${patch}")"
-    git apply --3way "\${patch}"
+  for patch in "${patches[@]}"; do
+    echo "==> Aplicando patch: $(basename "${patch}")"
+    git apply --3way "${patch}"
   done
 fi
 
-python3 - "\${PDS_HOSTNAME}" "\${ROOT_DIR}/espelunca-icon.svg" <<'PY'
+python3 - "${PDS_HOSTNAME}" "${ROOT_DIR}/espelunca-icon.svg" <<'PY'
 from pathlib import Path
 import re
 import sys
@@ -98,7 +98,7 @@ url_helpers.write_text(text)
 # Page/browser titles use the Espelunca identity.
 headings = Path("src/lib/strings/headings.ts")
 text = headings.read_text()
-text = text.replace("return \`\${unreadPrefix}\${page} — Bluesky\`", "return \`\${unreadPrefix}\${page} — Espelunca\`")
+text = text.replace("return \`${unreadPrefix}${page} — Bluesky\`", "return \`${unreadPrefix}${page} — Espelunca\`")
 headings.write_text(text)
 
 # Hosting provider selector should identify this PDS as Espelunca.
