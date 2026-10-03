@@ -1,71 +1,71 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="\$(cd -- "\$(dirname -- "\${BASH_SOURCE[0]}")/.." && pwd)"
 set -a
-source "${ROOT_DIR}/config.env"
+source "\${ROOT_DIR}/config.env"
 set +a
 
-: "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
-: "${APP_DIR:?APP_DIR não definido}"
+: "\${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
+: "\${APP_DIR:?APP_DIR não definido}"
 
-cd "${APP_DIR}"
+cd "\${APP_DIR}"
 
 echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
 
-# Patches opcionais permitem que alterações maiores no social-app fiquem no GitHub
-# sem copiar o repositório upstream inteiro para o BlueskyEspelunca.
-PATCH_DIR="${ROOT_DIR}/patches/social-app"
-if [[ -d "${PATCH_DIR}" ]]; then
+PATCH_DIR="\${ROOT_DIR}/patches/social-app"
+if [[ -d "\${PATCH_DIR}" ]]; then
   shopt -s nullglob
-  patches=("${PATCH_DIR}"/*.patch)
+  patches=("\${PATCH_DIR}"/*.patch)
   shopt -u nullglob
-  for patch in "${patches[@]}"; do
-    echo "==> Aplicando patch: $(basename "${patch}")"
-    git apply --3way "${patch}"
+  for patch in "\${patches[@]}"; do
+    echo "==> Aplicando patch: \$(basename "\${patch}")"
+    git apply --3way "\${patch}"
   done
 fi
 
-
-python3 - "\${PDS_HOSTNAME}" <<'PY'
+python3 - "\${PDS_HOSTNAME}" "\${ROOT_DIR}/espelunca-icon.svg" <<'PY'
 from pathlib import Path
+import re
 import sys
 
 pds = sys.argv[1]
-path = Path("src/lib/constants.ts")
-text = path.read_text()
+root = Path(sys.argv[2])
 
-desired_service = f"export const BSKY_SERVICE = 'https://{pds}'"
-desired_did = f"export const BSKY_SERVICE_DID = 'did:web:{pds}'"
+# PDS used by the app.
+constants = Path("src/lib/constants.ts")
+text = constants.read_text()
+
+desired_service = "export const BSKY_SERVICE = 'https://" + pds + "'"
+desired_did = "export const BSKY_SERVICE_DID = 'did:web:" + pds + "'"
 desired_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
 
-if desired_service in text and desired_did in text and desired_default in text:
-    path.write_text(text)
-    raise SystemExit(0)
-
-old_service = "export const BSKY_SERVICE = 'https://bsky.social'"
-old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
-
-if old_service not in text or old_did not in text or desired_default not in text:
-    raise SystemExit("Não foi possível localizar os padrões de serviço padrão no upstream.")
-
-text = text.replace(old_service, desired_service, 1)
-text = text.replace(old_did, desired_did, 1)
-
-if desired_service not in text or desired_did not in text:
+text = re.sub(
+    r"export const BSKY_SERVICE = '[^']+'",
+    desired_service,
+    text,
+    count=1,
+)
+text = re.sub(
+    r"export const BSKY_SERVICE_DID = '[^']+'",
+    desired_did,
+    text,
+    count=1,
+)
+text = re.sub(
+    r"export const DEFAULT_SERVICE = [^\n]+",
+    desired_default,
+    text,
+    count=1,
+)
+if desired_service not in text or desired_did not in text or desired_default not in text:
     raise SystemExit("Falha ao configurar o PDS da Espelunca.")
+constants.write_text(text)
 
-path.write_text(text)
-PY
-
-python3 <<'PY'
-from pathlib import Path
-import re
-
-path = Path("app.config.js")
-text = path.read_text()
-
-replacements = {
+# Application identity and supported deep-link domains.
+app_config = Path("app.config.js")
+text = app_config.read_text()
+for old, new in {
     "name: 'Bluesky'": "name: 'Espelunca'",
     "slug: 'bluesky'": "slug: 'espelunca'",
     "scheme: 'bluesky'": "scheme: 'espelunca'",
@@ -73,9 +73,7 @@ replacements = {
     "package: 'xyz.blueskyweb.app'": "package: 'blue.espelunca.app'",
     "host: 'bsky.app',": "host: 'espelunca.blue',",
     "'applinks:bsky.app',": "'applinks:espelunca.blue',",
-}
-
-for old, new in replacements.items():
+}.items():
     text = text.replace(old, new)
 
 text = re.sub(
@@ -84,43 +82,59 @@ text = re.sub(
     text,
     count=1,
 )
+app_config.write_text(text)
 
-path.write_text(text)
-PY
-
-python3 <<'PY'
-from pathlib import Path
-
-path = Path("src/lib/strings/url-helpers.ts")
-text = path.read_text()
-
-old = "      return 'Bluesky Social'"
-new = "      return urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'"
-
-if "urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'" not in text:
-    if old not in text:
+# User-facing provider name in account creation/server selection.
+url_helpers = Path("src/lib/strings/url-helpers.ts")
+text = url_helpers.read_text()
+custom_provider = "return urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'"
+if custom_provider not in text:
+    old_provider = "      return 'Bluesky Social'"
+    if old_provider not in text:
         raise SystemExit("Não foi possível configurar o nome do provedor no signup.")
-    text = text.replace(old, new, 1)
+    text = text.replace(old_provider, "      " + custom_provider, 1)
+url_helpers.write_text(text)
 
-path.write_text(text)
+# Page/browser titles use the Espelunca identity.
+headings = Path("src/lib/strings/headings.ts")
+text = headings.read_text()
+text = text.replace("return \`\${unreadPrefix}\${page} — Bluesky\`", "return \`\${unreadPrefix}\${page} — Espelunca\`")
+headings.write_text(text)
 
-path = Path("src/state/persisted/schema.ts")
-text = path.read_text()
+# Hosting provider selector should identify this PDS as Espelunca.
+server_input = Path("src/components/dialogs/ServerInput.tsx")
+text = server_input.read_text()
+text = text.replace("label={_(msg\`Bluesky\`)}", "label={_(msg\`Espelunca\`)}", 1)
+text = text.replace("{_(msg\`Bluesky\`)}", "{_(msg\`Espelunca\`)}", 1)
+text = text.replace(
+    """                Bluesky is an open network where you can choose your own
+                provider. If you're new here, we recommend sticking with the
+                default Bluesky Social option.""",
+    """                Espelunca is an open network where you can choose your own
+                provider. If you're new here, the default Espelunca option is
+                already selected.""",
+    1,
+)
+text = text.replace(
+    """                Bluesky is an open network where you can choose your hosting
+                provider. If you're a developer, you can host your own server.""",
+    """                Espelunca is an open network where you can choose your
+                hosting provider. If you're a developer, you can host your own
+                server.""",
+    1,
+)
+server_input.write_text(text)
 
-if "  darkTheme: 'dim'," in text:
-    text = text.replace("  darkTheme: 'dim',", "  darkTheme: 'dark',", 1)
-elif "  darkTheme: 'dark'," not in text:
-    raise SystemExit("Não foi possível localizar o tema escuro padrão no upstream.")
+# Default appearance: darkest theme. Users may still explicitly choose Light
+# or Dim in Appearance settings.
+schema = Path("src/state/persisted/schema.ts")
+text = schema.read_text()
+text = re.sub(r"colorMode: 'system',", "colorMode: 'dark',", text, count=1)
+text = re.sub(r"darkTheme: 'dim',", "darkTheme: 'dark',", text, count=1)
+schema.write_text(text)
 
-path.write_text(text)
-PY
-
-python3 "\${ROOT_DIR}/espelunca-icon.svg" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-icon = Path(sys.argv[1]).read_text()
+# Replace the butterfly path in reusable logo components.
+icon = root.read_text()
 match = re.search(r"<path\b[^>]*\bd=\"([^\"]+)\"", icon, re.IGNORECASE)
 if not match:
     raise SystemExit("Não foi possível extrair o path do espelunca-icon.svg.")
@@ -135,11 +149,11 @@ def replace_path_d(path: Path, pattern: str, label: str) -> None:
     path.write_text(text)
 
 logo = Path("src/view/icons/Logo.tsx")
-logo_text = logo.read_text()
-logo_text = logo_text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
-logo_text = logo_text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
-logo_text = logo_text.replace('accessibilityLabel="Bluesky"', 'accessibilityLabel="Espelunca"', 1)
-logo.write_text(logo_text)
+text = logo.read_text()
+text = text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
+text = text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
+text = text.replace('accessibilityLabel="Bluesky"', 'accessibilityLabel="Espelunca"', 1)
+logo.write_text(text)
 replace_path_d(
     logo,
     r'(<Path\s*\n\s*fill=\{_fill\}\s*\n\s*d=")([^"]+)(")',
@@ -147,10 +161,10 @@ replace_path_d(
 )
 
 mark = Path("src/view/icons/Logomark.tsx")
-mark_text = mark.read_text()
-mark_text = mark_text.replace("const ratio = 54 / 61", "const ratio = 1", 1)
-mark_text = mark_text.replace('viewBox="0 0 61 54"', 'viewBox="0 0 640 640"', 1)
-mark.write_text(mark_text)
+text = mark.read_text()
+text = text.replace("const ratio = 54 / 61", "const ratio = 1", 1)
+text = text.replace('viewBox="0 0 61 54"', 'viewBox="0 0 640 640"', 1)
+mark.write_text(text)
 replace_path_d(
     mark,
     r'(<Path\s*\n\s*fill=\{fill \|\| pal\.text\.color\}\s*\n\s*d=")([^"]+)(")',
@@ -233,16 +247,15 @@ export function LogomarkWithType({
 """.replace("__ESP_ICON_D__", icon_d))
 
 splash = Path("src/Splash.tsx")
-splash_text = splash.read_text()
-splash_text = splash_text.replace('viewBox="0 0 64 66"', 'viewBox="0 0 640 640"', 1)
-splash_text = splash_text.replace("const height = width * (67 / 64)", "const height = width", 1)
-splash.write_text(splash_text)
+text = splash.read_text()
+text = text.replace('viewBox="0 0 64 66"', 'viewBox="0 0 640 640"', 1)
+text = text.replace("const height = width * (67 / 64)", "const height = width", 1)
+splash.write_text(text)
 replace_path_d(
     splash,
-    r'(<Path\s*\n\s*fill=\{props\.fill \|\| \x27#fff\x27\}\s*\n\s*d=")([^"]+)(")',
+    r"(<Path\s*\n\s*fill=\{props\.fill \|\| '#fff'\}\s*\n\s*d=")([^"]+)(")",
     "o desenho do logo do splash",
 )
-PY
 
-echo "==> Customizações de código/configuração aplicadas."
-echo "==> Customizações de código/configuração aplicadas."
+print("Customizações de branding e tema aplicadas.")
+PY
