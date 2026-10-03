@@ -133,6 +133,45 @@ text = re.sub(r"colorMode: 'system',", "colorMode: 'dark',", text, count=1)
 text = re.sub(r"darkTheme: 'dim',", "darkTheme: 'dark',", text, count=1)
 schema.write_text(text)
 
+# Apply the new dark-first default to existing installations only once.
+# Explicit Light/Dim choices remain untouched after the migration.
+schema = Path("src/state/persisted/schema.ts")
+text = schema.read_text()
+if "appearanceDefaultMigrated: z.boolean().optional()," not in text:
+    text = text.replace(
+        "  darkTheme: z.enum(['dim', 'dark']).optional(),",
+        "  darkTheme: z.enum(['dim', 'dark']).optional(),\n  appearanceDefaultMigrated: z.boolean().optional(),",
+        1,
+    )
+text = re.sub(r"colorMode: 'system',", "colorMode: 'dark',", text, count=1)
+text = re.sub(r"darkTheme: 'dim',", "darkTheme: 'dark',", text, count=1)
+if "  appearanceDefaultMigrated: false," not in text:
+    text = text.replace(
+        "  darkTheme: 'dark',\n  session:",
+        "  darkTheme: 'dark',\n  appearanceDefaultMigrated: false,\n  session:",
+        1,
+    )
+schema.write_text(text)
+
+persisted_util = Path("src/state/persisted/util.ts")
+text = persisted_util.read_text()
+migration = """  if (!next.appearanceDefaultMigrated) {
+    if (next.colorMode === 'system' && (next.darkTheme === 'dim' || !next.darkTheme)) {
+      next.colorMode = 'dark'
+      next.darkTheme = 'dark'
+    }
+    next.appearanceDefaultMigrated = true
+  }
+
+"""
+if migration.strip() not in text:
+    marker = "  return next
+"
+    if marker not in text:
+        raise SystemExit("Não foi possível localizar o retorno da normalização de preferências.")
+    text = text.replace(marker, migration + marker, 1)
+persisted_util.write_text(text)
+
 # Replace the butterfly path in reusable logo components.
 icon = root.read_text()
 match = re.search(r"<path\b[^>]*\bd=\"([^\"]+)\"", icon, re.IGNORECASE)
