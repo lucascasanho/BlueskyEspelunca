@@ -263,18 +263,28 @@ async function publish(){
 async function seed(){
   const d=db(), ins=d.prepare(`INSERT INTO post(uri,cid,authorDid,createdAt,topic,topicScore,text,recordJson,status,insertedAt)
     VALUES(@uri,@cid,@authorDid,@createdAt,@topic,@topicScore,@text,@recordJson,'pending',@insertedAt) ON CONFLICT(uri) DO NOTHING`)
-  const appviews=[APPVIEW,'https://api.bsky.app'].filter((v,i,a)=>v && a.indexOf(v)===i)
+  const appviews=[APPVIEW,'https://public.api.bsky.app','https://api.bsky.app',PDS_SERVICE].filter((v,i,a)=>v && a.indexOf(v)===i)
   let fetched=0, passed=0, duplicates=0, rejected=0, requests=0
+  const failures=[]
   for(const q of ['meme','memes','tecnologia','notícia','noticias','dead by daylight','fortnite','league of legends']){
     let data=null
     for(const base of appviews){
       const u=new URL(`${base}/xrpc/app.bsky.feed.searchPosts`)
-      u.searchParams.set('q',q);u.searchParams.set('lang','pt');u.searchParams.set('sort','latest');u.searchParams.set('limit','100')
+      u.searchParams.set('q',q)
+      u.searchParams.set('lang','pt-br')
+      u.searchParams.set('sort','latest')
+      u.searchParams.set('limit','100')
       requests++
       try{
-        const r=await fetch(u)
-        if(r.ok){data=await r.json();break}
-      }catch{}
+        const r=await fetch(u,{headers:{accept:'application/json','user-agent':'EspeluncaBR-Feed/1.0'}})
+        if(r.ok){
+          data=await r.json()
+          break
+        }
+        failures.push(`${new URL(base).hostname} q="${q}" HTTP ${r.status}`)
+      }catch(e){
+        failures.push(`${new URL(base).hostname} q="${q}" ${String(e?.message??e).slice(0,100)}`)
+      }
     }
     if(!data)continue
     for(const p of data.posts??[]){
@@ -287,6 +297,7 @@ async function seed(){
       if(result.changes)passed++; else duplicates++
     }
   }
+  if(failures.length) console.log(`Seed falhas de consulta: ${failures.slice(0,12).join(' | ')}`)
   console.log(`Seed: ${passed} novos candidatos enviados para moderação local. Retornados: ${fetched}; rejeitados pelos filtros: ${rejected}; já existentes: ${duplicates}; requisições: ${requests}.`)
 }
 const cmd=process.argv[2]
