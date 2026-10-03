@@ -19,6 +19,7 @@ echo "============================================================"
 echo
 echo "PDS: https://${PDS_HOSTNAME}"
 echo "Web: https://${PDS_HOSTNAME}"
+echo "Feed: https://${FEEDGEN_HOSTNAME:-feeds.${PDS_HOSTNAME}}"
 echo "PDS local: http://127.0.0.1:${PDS_PORT}"
 echo "Web local: http://127.0.0.1:${WEB_PORT}"
 echo
@@ -26,6 +27,7 @@ echo
 echo "--- systemd ---"
 sudo systemctl --no-pager --full status espelunca-pds || true
 sudo systemctl --no-pager --full status espelunca-bluesky-web || true
+sudo systemctl --no-pager --full status ${FEEDGEN_SERVICE:-espelunca-bluesky-feed.service} || true
 
 echo
 echo "--- containers ---"
@@ -53,3 +55,4 @@ echo
 echo "--- portas ---"
 sudo ss -ltnp "sport = :${PDS_PORT}" || true
 sudo ss -ltnp "sport = :${WEB_PORT}" || true
+sudo ss -ltnp "sport = :${FEEDGEN_PORT:-3200}" || true
