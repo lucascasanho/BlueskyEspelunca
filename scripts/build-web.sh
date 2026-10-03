@@ -9,6 +9,8 @@ set +a
 : "${WEB_PORT:?WEB_PORT não definido}"
 
 cd "${APP_DIR}"
-pnpm build-web
 "${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
+pnpm build-web
+mkdir -p dist/static
+ln -sfn ../_expo dist/static/_expo
 sudo systemctl restart espelunca-bluesky-web.service
