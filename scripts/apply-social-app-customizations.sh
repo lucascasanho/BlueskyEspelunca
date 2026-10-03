@@ -165,7 +165,7 @@ migration = """  if (!next.appearanceDefaultMigrated) {
 
 """
 if migration.strip() not in text:
-    marker = "  return next\\n"
+    marker = "\n  return next\n"
     if marker not in text:
         raise SystemExit("Não foi possível localizar o retorno da normalização de preferências.")
     text = text.replace(marker, migration + marker, 1)
