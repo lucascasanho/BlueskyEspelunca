@@ -5,7 +5,7 @@ Infraestrutura da Espelunca baseada no AT Protocol, usando o PDS oficial do Blue
 ## Arquitetura
 
 - PDS: `https://espelunca.blue`
-- Web: `https://app.espelunca.blue`
+- Web: `https://espelunca.blue`
 - Handles: `@usuario.espelunca.blue`
 - PDS local: `127.0.0.1:3100`
 - Web local: `127.0.0.1:3101`
@@ -50,13 +50,23 @@ O instalador:
 
 O Tunnel existente da Espelunca pode encaminhar os serviços sem abrir 3100/3101 na Internet.
 
-No arquivo local `/home/espelunca/.cloudflared/config.yml`, use estas regras antes do catch-all:
+No arquivo local `/home/espelunca/.cloudflared/config.yml`, o mesmo hostname atende o Web e o PDS. As rotas do protocolo vão primeiro para o PDS e o restante da raiz vai para o Web:
 
 ```yaml
-  - hostname: app.espelunca.blue
-    service: http://127.0.0.1:3101
   - hostname: espelunca.blue
+    path: ^/xrpc/.*
     service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    path: ^/\\.well-known/.*
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    path: ^/oauth/.*
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    path: ^/oauth-client-metadata\\.json$
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    service: http://127.0.0.1:3101
   - hostname: "*.espelunca.blue"
     service: http://127.0.0.1:3100
 ```
@@ -69,7 +79,6 @@ Depois do ingress, os DNS do Cloudflare devem apontar para o Tunnel existente:
 
 ```text
 espelunca.blue       CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
-app.espelunca.blue   CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
 *.espelunca.blue     CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
 ```
 
