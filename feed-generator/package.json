@@ -1,0 +1,20 @@
+{
+  "name": "espelunca-blue-feed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Feed Generator da Espelunca.blue com curadoria de PT-BR, temas brasileiros, filtragem de toxicidade e detecção de mídia sintética.",
+  "license": "MIT",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "start": "node feed.mjs",
+    "test": "node --test test.mjs",
+    "check": "node --check feed.mjs && node --check test.mjs"
+  },
+  "dependencies": {
+    "@bsky/jetstream": "1.0.0",
+    "@huggingface/transformers": "4.3.0",
+    "better-sqlite3": "12.4.1",
+    "express": "5.1.0"
+  }
+}
