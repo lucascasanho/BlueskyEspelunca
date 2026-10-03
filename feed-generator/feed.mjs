@@ -263,17 +263,31 @@ async function publish(){
 async function seed(){
   const d=db(), ins=d.prepare(`INSERT INTO post(uri,cid,authorDid,createdAt,topic,topicScore,text,recordJson,status,insertedAt)
     VALUES(@uri,@cid,@authorDid,@createdAt,@topic,@topicScore,@text,@recordJson,'pending',@insertedAt) ON CONFLICT(uri) DO NOTHING`)
-  let n=0
-  for(const q of ['meme','memes','tecnologia','notícia','dead by daylight','fortnite','league of legends']){
-    const u=new URL(`${APPVIEW}/xrpc/app.bsky.feed.searchPosts`); u.searchParams.set('q',q);u.searchParams.set('lang','pt');u.searchParams.set('sort','latest');u.searchParams.set('limit','100')
-    const r=await fetch(u); if(!r.ok)continue; const data=await r.json()
+  const appviews=[APPVIEW,'https://api.bsky.app'].filter((v,i,a)=>v && a.indexOf(v)===i)
+  let fetched=0, passed=0, duplicates=0, rejected=0, requests=0
+  for(const q of ['meme','memes','tecnologia','notícia','noticias','dead by daylight','fortnite','league of legends']){
+    let data=null
+    for(const base of appviews){
+      const u=new URL(`${base}/xrpc/app.bsky.feed.searchPosts`)
+      u.searchParams.set('q',q);u.searchParams.set('lang','pt');u.searchParams.set('sort','latest');u.searchParams.set('limit','100')
+      requests++
+      try{
+        const r=await fetch(u)
+        if(r.ok){data=await r.json();break}
+      }catch{}
+    }
+    if(!data)continue
     for(const p of data.posts??[]){
-      if(!p.record||!p.author?.did||!p.uri||!p.cid)continue
-      const reason=cheapFilter(p.record); if(reason)continue
-      const t=topic(p.record); ins.run({uri:p.uri,cid:p.cid,authorDid:p.author.did,createdAt:new Date(p.record.createdAt).toISOString(),topic:t.name,topicScore:t.score,text:String(p.record.text??''),recordJson:JSON.stringify(p.record),insertedAt:new Date().toISOString()});n++
+      fetched++
+      if(!p.record||!p.author?.did||!p.uri||!p.cid){rejected++;continue}
+      const reason=cheapFilter(p.record)
+      if(reason){rejected++;continue}
+      const t=topic(p.record)
+      const result=ins.run({uri:p.uri,cid:p.cid,authorDid:p.author.did,createdAt:new Date(p.record.createdAt).toISOString(),topic:t.name,topicScore:t.score,text:String(p.record.text??''),recordJson:JSON.stringify(p.record),insertedAt:new Date().toISOString()})
+      if(result.changes)passed++; else duplicates++
     }
   }
-  console.log(`Seed: ${n} candidatos enviados para moderação local.`)
+  console.log(`Seed: ${passed} novos candidatos enviados para moderação local. Retornados: ${fetched}; rejeitados pelos filtros: ${rejected}; já existentes: ${duplicates}; requisições: ${requests}.`)
 }
 const cmd=process.argv[2]
 if(cmd==='publish')publish().catch(e=>{console.error(e);process.exitCode=1})
