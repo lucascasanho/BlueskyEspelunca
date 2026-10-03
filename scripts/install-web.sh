@@ -25,7 +25,7 @@ if [[ ! -d "${APP_DIR}/.git" ]]; then
 else
   echo "==> Atualizando social-app oficial"
   git -C "${APP_DIR}" fetch --prune origin
-  git -C "${APP_DIR}" pull --ff-only
+  git -C "${APP_DIR}" reset --hard origin/main
 fi
 
 cd "${APP_DIR}"
