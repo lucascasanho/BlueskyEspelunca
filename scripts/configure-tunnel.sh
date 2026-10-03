@@ -37,14 +37,14 @@ lines = text.splitlines()
 start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
-managed = {pds_host, f"*.{pds_host}", app_host}
+managed = {pds_host, "*." + pds_host, app_host}
 filtered = []
 i = 0
 
 while i < len(existing):
     line = existing[i]
     if line.startswith("  - hostname:"):
-        host = line.split(":", 1)[1].strip()
+        host = line.split(":", 1)[1].strip().strip('"').strip("'")
         if host in managed:
             i += 1
             while i < len(existing) and not existing[i].startswith("  - "):
@@ -61,12 +61,12 @@ for j, line in enumerate(filtered):
         break
 
 rules = [
-    f"  - hostname: {app_host}",
-    f"    service: http://127.0.0.1:{web_port}",
-    f"  - hostname: {pds_host}",
-    f"    service: http://127.0.0.1:{pds_port}",
-    f"  - hostname: \"*.{pds_host}\",
-    f"    service: http://127.0.0.1:{pds_port}",
+    "  - hostname: {}".format(app_host),
+    "    service: http://127.0.0.1:{}".format(web_port),
+    "  - hostname: {}".format(pds_host),
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: \"*.{}\"".format(pds_host),
+    "    service: http://127.0.0.1:{}".format(pds_port),
 ]
 
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
