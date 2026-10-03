@@ -60,4 +60,5 @@ PY
 
 mkdir -p dist/static
 ln -sfn ../_expo dist/static/_expo
-sudo systemctl restart espelunca-bluesky-web.service
+
+echo "==> Build Web concluído."
