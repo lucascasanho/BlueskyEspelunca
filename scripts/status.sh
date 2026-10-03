@@ -8,14 +8,14 @@ echo " BLUESKY ESPELUNCA — STATUS"
 echo "============================================================"
 echo
 echo "PDS: https://${PDS_HOSTNAME}"
-echo "Web: https://${APP_HOSTNAME}"
+echo "Web: https://${PDS_HOSTNAME}"
 echo "PDS local: http://127.0.0.1:${PDS_PORT}"
 echo "Web local: http://127.0.0.1:${WEB_PORT}"
 echo
 
 echo "--- systemd ---"
 sudo systemctl --no-pager --full status espelunca-pds || true
-sudo systemctl --no-pager --full status espelunca-web || true
+sudo systemctl --no-pager --full status espelunca-bluesky-web || true
 
 echo
 echo "--- containers ---"
