@@ -62,7 +62,7 @@ text = re.sub(
 if desired_feed_uri not in text:
     text = text.replace(
         desired_default,
-        desired_default + "\\n" + desired_feed_uri,
+        desired_default + "\n" + desired_feed_uri,
         1,
     )
 if (
