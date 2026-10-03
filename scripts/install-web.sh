@@ -6,6 +6,8 @@ set -Eeuo pipefail
 : "${APP_DIR:?APP_DIR não definido}"
 : "${WEB_PORT:?WEB_PORT não definido}"
 
+WEB_SERVICE="espelunca-bluesky-web.service"
+
 if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
 if ! [[ "${WEB_PORT}" =~ ^[0-9]+$ ]] || (( WEB_PORT < 1024 || WEB_PORT > 65535 )); then
@@ -13,7 +15,7 @@ if ! [[ "${WEB_PORT}" =~ ^[0-9]+$ ]] || (( WEB_PORT < 1024 || WEB_PORT > 65535 )
   exit 1
 fi
 
-if [[ ! -f "/etc/systemd/system/espelunca-web.service" ]] && ${SUDO} ss -ltnH "sport = :${WEB_PORT}" 2>/dev/null | grep -q .; then
+if [[ ! -f "/etc/systemd/system/${WEB_SERVICE}" ]] && ${SUDO} ss -ltnH "sport = :${WEB_PORT}" 2>/dev/null | grep -q .; then
   echo "ERRO: a porta local ${WEB_PORT} já está em uso."
   ${SUDO} ss -ltnp "sport = :${WEB_PORT}" || true
   exit 1
@@ -102,7 +104,7 @@ fi
 
 APP_USER="${SUDO_USER:-$(id -un)}"
 
-cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-web.service >/dev/null
+cat <<EOF | ${SUDO} tee /etc/systemd/system/${WEB_SERVICE} >/dev/null
 [Unit]
 Description=Espelunca Bluesky Web
 After=network.target
@@ -121,8 +123,8 @@ WantedBy=multi-user.target
 EOF
 
 ${SUDO} systemctl daemon-reload
-${SUDO} systemctl enable espelunca-web
-${SUDO} systemctl restart espelunca-web
+${SUDO} systemctl enable "${WEB_SERVICE}"
+${SUDO} systemctl restart "${WEB_SERVICE}"
 
 echo
 echo "Web local: http://127.0.0.1:${WEB_PORT}"
