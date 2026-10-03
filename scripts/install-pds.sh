@@ -143,7 +143,7 @@ ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
 # O Caddy oficial não é usado aqui porque 80/443 já pertencem ao Mastodon.
 # O compose recebe também o entrypoint versionado da Espelunca, que reaplica
 # as customizações quando o container é recriado pelo Watchtower.
-"${ROOT_DIR}/scripts/configure-pds-compose.sh"
+bash "${ROOT_DIR}/scripts/configure-pds-compose.sh"
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-pds.service >/dev/null
 [Unit]
