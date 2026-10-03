@@ -20,6 +20,14 @@
     "communication"
   ],
   "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Explorar",
+      "short_name": "Explorar",
+      "description": "Abrir a busca e a área de exploração da Espelunca.",
+      "url": "/search"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -31,13 +39,7 @@
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ]
 }
