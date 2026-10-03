@@ -17,7 +17,7 @@ sudo systemctl --no-pager --full status espelunca-web || true
 
 echo
 echo "--- containers ---"
-docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' || true
+sudo docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' || true
 
 echo
 echo "--- PDS health local ---"
