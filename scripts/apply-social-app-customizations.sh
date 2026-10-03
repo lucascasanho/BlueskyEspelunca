@@ -150,6 +150,23 @@ def replace_path_d(path: Path, pattern: str, label: str) -> None:
 
 logo = Path("src/view/icons/Logo.tsx")
 text = logo.read_text()
+
+# Never render the upstream Kawaii/butterfly variant in this fork.
+text = text.replace("import {Image} from 'expo-image'\n", "")
+text = text.replace("import {useLogoVariant} from '#/view/icons/useLogoVariant'\n", "")
+text = text.replace(
+    "  const {allowVariants = true, fill, ...rest} = props",
+    "  const {fill, ...rest} = props",
+    1,
+)
+text = re.sub(
+    r"\n  const logoVariant = useLogoVariant\(allowVariants\)\n\n  if \(logoVariant === 'kawaii'\) \{.*?\n  \}\n\n  return \(",
+    "\n  return (",
+    text,
+    count=1,
+    flags=re.DOTALL,
+)
+
 text = text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
 text = text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
 text = text.replace('accessibilityLabel="Bluesky"', 'accessibilityLabel="Espelunca"', 1)
