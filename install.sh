@@ -11,7 +11,9 @@ if [[ ! -f "${CONFIG_FILE}" ]]; then
 fi
 
 # shellcheck disable=SC1090
+set -a
 source "${CONFIG_FILE}"
+set +a
 
 SCRIPT_DIR="${ROOT_DIR}/scripts"
 
@@ -22,7 +24,7 @@ echo " BLUESKY ESPELUNCA — INSTALAÇÃO"
 echo "============================================================"
 echo
 echo "PDS: https://${PDS_HOSTNAME}"
-echo "Web: https://${APP_HOSTNAME}"
+echo "Site/Web: https://${PDS_HOSTNAME}"
 echo "PDS local: ${PDS_PORT}"
 echo "Web local: ${WEB_PORT}"
 echo
@@ -46,5 +48,4 @@ echo "  ${SCRIPT_DIR}/configure-tunnel.sh"
 echo
 echo "DNS:"
 echo "  ${PDS_HOSTNAME}       -> Tunnel existente"
-echo "  ${APP_HOSTNAME}       -> Tunnel existente"
 echo "  *.${PDS_HOSTNAME}     -> Tunnel existente"
