@@ -110,14 +110,14 @@ url_helpers.write_text(text)
 # Page/browser titles use the Espelunca identity.
 headings = Path("src/lib/strings/headings.ts")
 text = headings.read_text()
-text = text.replace("return \`${unreadPrefix}${page} — Bluesky\`", "return \`${unreadPrefix}${page} — Espelunca\`")
+text = text.replace("return `${unreadPrefix}${page} — Bluesky`", "return `${unreadPrefix}${page} — Espelunca`")
 headings.write_text(text)
 
 # Hosting provider selector should identify this PDS as Espelunca.
 server_input = Path("src/components/dialogs/ServerInput.tsx")
 text = server_input.read_text()
-text = text.replace("label={_(msg\`Bluesky\`)}", "label={_(msg\`Espelunca\`)}", 1)
-text = text.replace("{_(msg\`Bluesky\`)}", "{_(msg\`Espelunca\`)}", 1)
+text = text.replace("label={_(msg`Bluesky`)}", "label={_(msg`Espelunca`)}", 1)
+text = text.replace("{_(msg`Bluesky`)}", "{_(msg`Espelunca`)}", 1)
 text = text.replace(
     """                Bluesky is an open network where you can choose your own
                 provider. If you're new here, we recommend sticking with the
