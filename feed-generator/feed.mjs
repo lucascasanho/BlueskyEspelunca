@@ -27,6 +27,7 @@ const AI_MODEL = process.env.AI_MEDIA_MODEL ?? 'onnx-community/ai-image-detect-d
 const AI_THRESHOLD = Number(process.env.AI_MEDIA_THRESHOLD ?? 0.80)
 const AI_UNKNOWN = process.env.AI_MEDIA_UNKNOWN_ACTION ?? 'drop'
 const RETENTION_DAYS = Number(process.env.FEEDGEN_RETENTION_DAYS ?? 7)
+const MODEL_DEVICE = process.env.FEEDGEN_MODEL_DEVICE ?? 'cpu'
 
 const TOPICS = {
   news: ['notícia','notícias','noticia','noticias','jornal','reportagem','última hora','ultima hora','brasil','política','politica','economia','eleições','eleicoes','congresso'],
@@ -97,7 +98,7 @@ const db = () => {
 }
 async function toxicity(text) {
   if (!text.trim()) return 0
-  toxicityPipe ??= pipeline('text-classification', TOXICITY_MODEL, {device:'wasm'})
+  toxicityPipe ??= pipeline('text-classification', TOXICITY_MODEL, {device:MODEL_DEVICE})
   const out = await (await toxicityPipe)(text,{top_k:null})
   const xs = Array.isArray(out)?out:[out]
   return Math.max(0,...xs.filter(x=>String(x?.label??'').toLowerCase().includes('toxic') && !String(x?.label??'').toLowerCase().includes('not-toxic')).map(x=>Number(x.score??0)))
@@ -116,7 +117,7 @@ async function syntheticScore(uri,r) {
   if (!mediaKinds(r).length) return {score:0}
   const thumbs = await mediaThumbs(uri)
   if (!thumbs.length) return {unknown:true,reason:'media-not-inspectable'}
-  aiPipe ??= pipeline('image-classification', AI_MODEL, {device:'wasm'})
+  aiPipe ??= pipeline('image-classification', AI_MODEL, {device:MODEL_DEVICE})
   let score=0
   for (const u of thumbs) {
     const out=await aiPipe(await RawImage.read(u))
@@ -134,6 +135,7 @@ async function start() {
     ON CONFLICT(uri) DO UPDATE SET cid=excluded.cid,recordJson=excluded.recordJson,status='pending',reason=NULL,toxicityScore=NULL,aiScore=NULL`)
   const del=d.prepare('DELETE FROM post WHERE uri=?')
   const pending=d.prepare("SELECT * FROM post WHERE status='pending' ORDER BY insertedAt ASC LIMIT 1")
+  d.prepare("UPDATE post SET status='pending',reason=NULL,toxicityScore=NULL,aiScore=NULL WHERE status='rejected' AND reason LIKE 'processing-error:%'").run()
   const count=d.prepare("SELECT COUNT(*) count FROM post WHERE status='pending'")
   const stats=d.prepare("SELECT status,COUNT(*) count FROM post GROUP BY status")
   const reasons=d.prepare("SELECT reason,COUNT(*) count FROM post WHERE status='rejected' GROUP BY reason ORDER BY count DESC LIMIT 10")
