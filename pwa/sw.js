@@ -5,7 +5,6 @@ const SHELL_URLS = [
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/icon-512-maskable.png',
   '/espelunca-icon.svg',
 ]
 
