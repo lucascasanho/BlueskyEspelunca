@@ -2,7 +2,9 @@
 
 Feed Generator da Espelunca.blue para o ecossistema AT Protocol.
 
-O feed aceita somente posts marcados como `pt-BR` ou `pt` e que tenham sinal de relevância em pelo menos um dos temas configurados: notícias, memes brasileiros, tecnologia, Dead by Daylight, Fortnite e League of Legends.
+O feed aceita somente posts marcados como `pt-BR` e que tenham sinal de relevância em pelo menos um dos temas configurados: notícias, memes brasileiros, tecnologia, Dead by Daylight, Fortnite e League of Legends.
+
+Os modelos locais são executados no runtime Node em CPU por padrão (`FEEDGEN_MODEL_DEVICE=cpu`).
 
 Antes da publicação, ele aplica filtros baratos de idioma, tema, domínios bloqueados, marcadores explícitos de conteúdo gerado por IA e rótulos de hate/harassment/spam/scam. Os candidatos então passam por um classificador de toxicidade executado localmente e, quando há imagem/vídeo, por um classificador local de mídia sintética.
 
