@@ -36,12 +36,19 @@ text = path.read_text()
 
 old_service = "export const BSKY_SERVICE = 'https://bsky.social'"
 old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
+old_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
 
-if old_service not in text or old_did not in text:
-    raise SystemExit("Não foi possível localizar os padrões atuais de BSKY_SERVICE no upstream.")
+if old_service not in text or old_did not in text or old_default not in text:
+    raise SystemExit("Não foi possível localizar os padrões de serviço padrão no upstream.")
 
 text = text.replace(old_service, f"export const BSKY_SERVICE = 'https://{pds}'")
 text = text.replace(old_did, f"export const BSKY_SERVICE_DID = 'did:web:{pds}'")
+text = text.replace(old_default, "export const DEFAULT_SERVICE = BSKY_SERVICE")
+
+if f"export const BSKY_SERVICE = 'https://{pds}'" not in text:
+    raise SystemExit("Falha ao configurar BSKY_SERVICE para o PDS da Espelunca.")
+if f"export const BSKY_SERVICE_DID = 'did:web:{pds}'" not in text:
+    raise SystemExit("Falha ao configurar BSKY_SERVICE_DID para o PDS da Espelunca.")
 path.write_text(text)
 PY
 
@@ -67,6 +74,21 @@ for old, new in replacements.items():
     text = text.replace(old, new)
 
 path.write_text(text)
+PY
+
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("src/state/persisted/schema.ts")
+text = path.read_text()
+
+old = "  darkTheme: 'dim',"
+new = "  darkTheme: 'dark',"
+
+if old not in text:
+    raise SystemExit("Não foi possível localizar o tema escuro padrão no upstream.")
+
+path.write_text(text.replace(old, new, 1))
 PY
 
 echo "==> Customizações de código/configuração aplicadas."
