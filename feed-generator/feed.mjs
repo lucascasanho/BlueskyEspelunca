@@ -187,8 +187,51 @@ async function start() {
   app.listen(PORT,HOST,()=>console.log(`Feed Generator ${FEED_NAME} on http://${HOST}:${PORT}`))
 }
 
-async function xrpc(method,body){
-  const r=await fetch(`${PDS_SERVICE}/xrpc/${method}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
+async function fetchJson(url, options = {}){
+  const r = await fetch(url, options)
+  const j = await r.json().catch(() => ({}))
+  if(!r.ok) throw new Error(`${url} HTTP ${r.status}: ${JSON.stringify(j)}`)
+  return j
+}
+function didWebUrl(did){
+  const parts = did.split(':').slice(2)
+  if(!parts.length) throw new Error('DID did:web inválido')
+  const host = parts.shift()
+  const path = parts.map(x => decodeURIComponent(x)).join('/')
+  return `https://${host}${path ? `/${path}/did.json` : '/.well-known/did.json'}`
+}
+async function resolveDidDocument(did){
+  if(did.startsWith('did:plc:')) return fetchJson(`https://plc.directory/${encodeURIComponent(did)}`)
+  if(did.startsWith('did:web:')) return fetchJson(didWebUrl(did))
+  throw new Error(`Método DID não suportado para descoberta automática: ${did.split(':').slice(0,2).join(':')}`)
+}
+function pdsFromDidDocument(doc){
+  const service = Array.isArray(doc?.service) ? doc.service : []
+  const entry = service.find(x => x?.id === '#atproto_pds' || String(x?.id ?? '').endsWith('#atproto_pds'))
+  const endpoint = String(entry?.serviceEndpoint ?? '').trim().replace(/\/$/, '')
+  if(!endpoint || new URL(endpoint).protocol !== 'https:') throw new Error('DID Document não informou um PDS HTTPS válido')
+  return endpoint
+}
+async function resolvePublisherPds(identifier){
+  const value = identifier.trim()
+  let did = value
+  if(!value.startsWith('did:')){
+    const encoded = encodeURIComponent(value)
+    let resolved
+    try {
+      resolved = await fetchJson(`${PDS_SERVICE}/xrpc/com.atproto.identity.resolveHandle?handle=${encoded}`)
+    } catch {
+      resolved = await fetchJson(`https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${encoded}`)
+    }
+    did = String(resolved?.did ?? '')
+    if(!did.startsWith('did:')) throw new Error('Não foi possível resolver o handle para um DID')
+  }
+  const doc = await resolveDidDocument(did)
+  if(doc?.id && doc.id !== did) throw new Error('DID Document retornou um DID diferente do identificador informado')
+  return {did, pds: pdsFromDidDocument(doc)}
+}
+async function xrpc(baseUrl,method,body){
+  const r=await fetch(`${baseUrl}/xrpc/${method}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
   const j=await r.json().catch(()=>({}))
   if(!r.ok)throw new Error(`${method} HTTP ${r.status}: ${JSON.stringify(j)}`)
   return j
@@ -198,8 +241,10 @@ async function publish(){
   const identifier=await rl.question('Handle/DID da conta do Feed: ')
   const password=await rl.question('App Password: ')
   rl.close()
-  const session=await xrpc('com.atproto.server.createSession',{identifier:identifier.trim(),password:password.trim()})
-  await xrpc('com.atproto.repo.putRecord',{repo:session.did,collection:'app.bsky.feed.generator',rkey:RECORD_NAME,validate:true,record:{$type:'app.bsky.feed.generator',did:SERVICE_DID,displayName:FEED_NAME,description:FEED_DESCRIPTION,createdAt:new Date().toISOString()}})
+  const {did,pds}=await resolvePublisherPds(identifier)
+  console.log(`PDS da conta detectado: ${pds}`)
+  const session=await xrpc(pds,'com.atproto.server.createSession',{identifier:identifier.trim(),password:password.trim()})
+  await xrpc(pds,'com.atproto.repo.putRecord',{repo:session.did,collection:'app.bsky.feed.generator',rkey:RECORD_NAME,validate:true,record:{$type:'app.bsky.feed.generator',did:SERVICE_DID,displayName:FEED_NAME,description:FEED_DESCRIPTION,createdAt:new Date().toISOString()}})
   let text=''; try{text=readFileSync(ENV_FILE,'utf8')}catch{}
   const line=`FEEDGEN_PUBLISHER_DID=${session.did}`
   text=/^FEEDGEN_PUBLISHER_DID=/m.test(text)?text.replace(/^FEEDGEN_PUBLISHER_DID=.*$/m,line):text+`${text&&!text.endsWith('\n')?'\n':''}${line}\n`
