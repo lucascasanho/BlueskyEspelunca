@@ -24,10 +24,11 @@ if ! command -v cloudflared >/dev/null 2>&1; then
   exit 1
 fi
 
-BACKUP="${CLOUDFLARED_CONFIG}.bak.$(date +%Y%m%d-%H%M%S)"
-${SUDO} cp "${CLOUDFLARED_CONFIG}" "${BACKUP}"
+TMP_CONFIG="$(mktemp "${CLOUDFLARED_CONFIG}.tmp.XXXXXX")"
+trap 'rm -f "${TMP_CONFIG}"' EXIT
+${SUDO} cp "${CLOUDFLARED_CONFIG}" "${TMP_CONFIG}"
 
-python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
+python3 - "${TMP_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
 from pathlib import Path
 import sys
 
@@ -96,11 +97,27 @@ rules = [
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
 
-echo "==> Validando configuração do Tunnel"
-cloudflared tunnel --config "${CLOUDFLARED_CONFIG}" ingress validate
+echo "==> Validando configuração do Tunnel candidata"
+cloudflared tunnel --config "${TMP_CONFIG}" ingress validate
+
+BACKUP="${CLOUDFLARED_CONFIG}.bak.$(date +%Y%m%d-%H%M%S)"
+${SUDO} cp "${CLOUDFLARED_CONFIG}" "${BACKUP}"
+${SUDO} cp "${TMP_CONFIG}" "${CLOUDFLARED_CONFIG}"
 
 echo "==> Reiniciando ${CLOUDFLARED_SERVICE}"
-${SUDO} systemctl restart "${CLOUDFLARED_SERVICE}"
+if ! ${SUDO} systemctl restart "${CLOUDFLARED_SERVICE}"; then
+  echo "ERRO: o Tunnel não reiniciou com a nova configuração. Restaurando backup..."
+  ${SUDO} cp "${BACKUP}" "${CLOUDFLARED_CONFIG}"
+  ${SUDO} systemctl restart "${CLOUDFLARED_SERVICE}" || true
+  exit 1
+fi
+
+if ! ${SUDO} systemctl is-active --quiet "${CLOUDFLARED_SERVICE}"; then
+  echo "ERRO: o Tunnel não ficou ativo após o restart. Restaurando backup..."
+  ${SUDO} cp "${BACKUP}" "${CLOUDFLARED_CONFIG}"
+  ${SUDO} systemctl restart "${CLOUDFLARED_SERVICE}" || true
+  exit 1
+fi
 
 echo
 echo "Tunnel atualizado."
