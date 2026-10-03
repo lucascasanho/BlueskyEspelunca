@@ -97,7 +97,7 @@ path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
 
 echo "==> Validando configuração do Tunnel"
-cloudflared tunnel ingress validate --config "${CLOUDFLARED_CONFIG}"
+cloudflared tunnel --config "${CLOUDFLARED_CONFIG}" ingress validate
 
 echo "==> Reiniciando ${CLOUDFLARED_SERVICE}"
 ${SUDO} systemctl restart "${CLOUDFLARED_SERVICE}"
