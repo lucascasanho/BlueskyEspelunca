@@ -487,8 +487,8 @@ create_account.write_text(text)
 # Home implementations. Canonicalize the tab order here as well, translating
 # indexes back to the underlying Pager order so tab presses remain correct.
 home_header = Path("src/view/com/home/HomeHeader.tsx")
-text = home_header.read_text()
-text = text.replace(
+header_text = home_header.read_text()
+header_text = header_text.replace(
     """import {TIMELINE_SAVED_FEED} from '#/lib/constants'""",
     """import {
   DISCOVER_FEED_URI,
@@ -529,6 +529,39 @@ header_custom = """  const {feeds, onSelect: onSelectProp} = props
     0,
     orderedFeeds.findIndex(item => item.index === props.selectedPage),
   )
+"""
+if header_anchor not in header_text:
+    raise SystemExit("Não encontrei o ponto comum do HomeHeader.")
+header_text = header_text.replace(header_anchor, header_custom, 1)
+header_text = header_text.replace(
+    "    return feeds.some(tab => {",
+    "    return orderedFeedItems.some(tab => {",
+    1,
+)
+header_text = header_text.replace(
+    "    const pinnedNames = feeds.map(f => getLocalizedFeedName(f, i18n))",
+    "    const pinnedNames = orderedFeedItems.map(f => getLocalizedFeedName(f, i18n))",
+    1,
+)
+header_text = header_text.replace(
+    "  }, [i18n, l, hasPinnedCustom, feeds])",
+    "  }, [i18n, l, hasPinnedCustom, orderedFeedItems])",
+    1,
+)
+header_text = header_text.replace(
+    "        onSelectProp(index)",
+    "        onSelectProp(orderedFeeds[index]?.index ?? index)",
+    1,
+)
+header_text = header_text.replace(
+    "        selectedPage={props.selectedPage}",
+    "        selectedPage={selectedPage}",
+    1,
+)
+if "orderedFeeds" not in header_text:
+    raise SystemExit("A ordenação do HomeHeader não foi aplicada.")
+home_header.write_text(header_text)
+
 # Both the legacy Home and the active Following v2 Home can render the
 # Web home route. Keep their feed order identical.
 for home in [
