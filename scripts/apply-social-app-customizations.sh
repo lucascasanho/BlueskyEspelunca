@@ -312,5 +312,43 @@ replace_path_d(
     "o desenho do logo do splash",
 )
 
+# Web also has an early React splash plus a static HTML splash. Both must use
+# the Espelunca mark so the upstream butterfly never appears during startup.
+splash_web = Path("src/Splash.web.tsx")
+text = splash_web.read_text()
+text = text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
+text = text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
+text = text.replace(
+    '<Svg\n            fill="none"\n            viewBox="0 0 640 640"',
+    '<Svg\n            fill="none"\n            viewBox="0 0 640 640"\n            accessibilityLabel="Espelunca"',
+    1,
+)
+# The literal tab/spacing above is intentionally not a regex. Handle the
+# actual formatted source explicitly as well.
+text = text.replace(
+    '            viewBox="0 0 640 640"\n            style=',
+    '            viewBox="0 0 640 640"\n            accessibilityLabel="Espelunca"\n            style=',
+    1,
+)
+splash_web.write_text(text)
+replace_path_d(
+    splash_web,
+    r'(<Path\s*\n\s*fill="#006AFF"\s*\n\s*d=")([^"]+)(")',
+    "o desenho do splash web",
+)
+
+def replace_static_splash(path: Path, label: str) -> None:
+    text = path.read_text()
+    text = text.replace("<!-- Bluesky SVG -->", "<!-- Espelunca SVG -->", 1)
+    pattern = r'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 57"><path fill="#006AFF" d="[^"]+"/></svg>'
+    replacement = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="#006AFF" d="' + icon_d + '"/></svg>'
+    text, count = re.subn(pattern, replacement, text, count=1)
+    if count != 1:
+        raise SystemExit(f"Não foi possível substituir o splash estático em {label}.")
+    path.write_text(text)
+
+replace_static_splash(Path("public/index.html"), "public/index.html")
+replace_static_splash(Path("bskyweb/templates/base.html"), "bskyweb/templates/base.html")
+
 print("Customizações de branding e tema aplicadas.")
 PY
