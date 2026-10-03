@@ -7,6 +7,7 @@ FEED_SERVICE="${FEEDGEN_SERVICE:-espelunca-bluesky-feed.service}"
 FEED_DIR="${FEEDGEN_INSTALL_DIR:-${INSTALL_DIR}/feed-generator}"
 FEED_ENV_FILE="${FEEDGEN_ENV_FILE:-${INSTALL_DIR}/feed.env}"
 FEED_PORT="${FEEDGEN_PORT:-3200}"
+FEED_DATA_DIR="${FEEDGEN_DATA_DIR:-${INSTALL_DIR}/feed-data}"
 
 case "${1:-}" in
   install) exec "${ROOT_DIR}/scripts/install-feed-generator.sh" ;;
