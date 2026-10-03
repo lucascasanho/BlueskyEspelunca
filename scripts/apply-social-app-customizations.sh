@@ -480,7 +480,7 @@ replacement="""          <Link
             onPress={() => trendingPrompt.open()}
           />"""
 marker=marker.replace("__BT__",chr(96))
-replacement=replacement.replace("__BT__",String.fromCharCode(96))
+replacement=replacement.replace("__BT__",chr(96))
 if marker not in text: raise SystemExit("Explore header marker não encontrado")
 text=text.replace(marker,replacement,1)
 explore.write_text(text)
@@ -493,8 +493,7 @@ text = text.replace(
     ax.features.TrendingExploreTopicsCountValue,
     DEFAULT_LIMIT,
   )""",
-    """  const exploreTopicCount = DEFAULT_LIMIT
-  const [showGlobal, setShowGlobal] = useState(false)""",
+    """  const [showGlobal, setShowGlobal] = useState(false)""",
     1,
 )
 text = text.replace(
@@ -547,8 +546,8 @@ replacement="""          <Link
             )}
           </Link>
           <Button"""
-marker=marker.replace("__BT__",String.fromCharCode(96))
-replacement=replacement.replace("__BT__",String.fromCharCode(96))
+marker=marker.replace("__BT__",chr(96))
+replacement=replacement.replace("__BT__",chr(96))
 if marker not in text: raise SystemExit("Sidebar header marker não encontrado")
 text=text.replace(marker,replacement,1)
 sidebar.write_text(text)
