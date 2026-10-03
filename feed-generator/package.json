@@ -12,7 +12,7 @@
     "check": "node --check feed.mjs && node --check test.mjs"
   },
   "dependencies": {
-    "@atproto/lex": "^0.5.0",
+    "@atproto/lex": "^0.3.13",
     "@bsky/jetstream": "1.0.0",
     "@huggingface/transformers": "4.3.0",
     "better-sqlite3": "12.4.1",
