@@ -33,17 +33,18 @@ bash install.sh
 O instalador:
 
 1. valida as portas locais dedicadas;
-2. instala dependências;
-3. instala/configura Docker Engine quando necessário;
-4. baixa o PDS oficial;
-5. cria os segredos do PDS;
-6. executa o PDS oficial em `PDS_PORT=3100`;
-7. baixa o `social-app` oficial;
-8. aponta o cliente para `https://espelunca.blue`;
-9. aplica a configuração de marca básica da Espelunca;
-10. compila a versão Web;
-11. publica o build local em `WEB_PORT=3101`;
-12. cria serviços systemd separados.
+2. lê a configuração local, incluindo SMTP quando configurado;
+3. instala dependências;
+4. instala/configura Docker Engine quando necessário;
+5. baixa o PDS oficial;
+6. cria os segredos do PDS;
+7. executa o PDS oficial em `PDS_PORT=3100`;
+8. baixa o `social-app` oficial;
+9. aponta o cliente para `https://espelunca.blue`;
+10. aplica a configuração de marca básica da Espelunca;
+11. compila a versão Web;
+12. publica o build local em `WEB_PORT=3101`;
+13. cria serviços systemd separados.
 
 ## Cloudflare Tunnel
 
@@ -98,6 +99,8 @@ Depois de validar o PDS e o domínio:
 ```
 
 O script cria uma conta com handle `@usuario.espelunca.blue`.
+
+O SMTP configurado em `config.env` é gravado somente no servidor em `pds.env`; o arquivo não deve ser enviado ao GitHub.
 
 A senha administrativa fica somente no servidor em:
 
