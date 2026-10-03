@@ -93,7 +93,7 @@ echo "==> Gerando Web build"
 pnpm build-web
 
 echo "==> Instalando servidor estático"
-npm install --global serve
+${SUDO} npm install --global serve
 
 SERVE_BIN="$(command -v serve || true)"
 if [[ -z "${SERVE_BIN}" ]]; then
