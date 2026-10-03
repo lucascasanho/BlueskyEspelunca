@@ -397,7 +397,8 @@ new_follow = """    let espeluncaDid: string | undefined
       ...(espeluncaDid ? [espeluncaDid] : []),
       ...(listItems?.map(i => i.subject.did) ?? []),
     ]"""
-if (!text.includes(old_follow)) throw new Error("Bloco followDids não encontrado no StepFinished upstream");
+if old_follow not in text:
+    raise SystemExit("Bloco followDids não encontrado no StepFinished upstream")
 text = text.replace(old_follow, new_follow, 1)
 step_finished.write_text(text)
 
@@ -406,3 +407,4 @@ trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
 text = trends_query.read_text()
 text = text.replace("export const DEFAULT_LIMIT = 5", "export const DEFAULT_LIMIT = 10", 1)
 trends_query.write_text(text)
+PY
