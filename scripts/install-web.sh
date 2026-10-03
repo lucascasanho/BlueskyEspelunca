@@ -60,53 +60,12 @@ cd "${APP_DIR}"
 echo "==> Instalando dependências"
 pnpm install --frozen-lockfile
 
-echo "==> Aplicando configuração Espelunca"
-
-python3 - "${PDS_HOSTNAME}" <<'PY'
-from pathlib import Path
-import sys
-
-pds = sys.argv[1]
-path = Path("src/lib/constants.ts")
-text = path.read_text()
-
-old_service = "export const BSKY_SERVICE = 'https://bsky.social'"
-old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
-
-if old_service not in text or old_did not in text:
-    raise SystemExit("Não foi possível localizar os padrões atuais de BSKY_SERVICE no upstream.")
-
-text = text.replace(old_service, f"export const BSKY_SERVICE = 'https://{pds}'")
-text = text.replace(old_did, f"export const BSKY_SERVICE_DID = 'did:web:{pds}'")
-path.write_text(text)
-PY
-
-python3 - "${PDS_HOSTNAME}" <<'PY'
-from pathlib import Path
-import sys
-
-host = sys.argv[1]
-path = Path("app.config.js")
-text = path.read_text()
-
-replacements = {
-    "name: 'Bluesky'": "name: 'Espelunca'",
-    "slug: 'bluesky'": "slug: 'espelunca'",
-    "scheme: 'bluesky'": "scheme: 'espelunca'",
-    "bundleIdentifier: 'xyz.blueskyweb.app'": "bundleIdentifier: 'blue.espelunca.app'",
-    "package: 'xyz.blueskyweb.app'": "package: 'blue.espelunca.app'",
-    "'applinks:bsky.app',": f"'applinks:{host}',",
-    "host: 'bsky.app',": f"host: '{host}',",
-}
-
-for old, new in replacements.items():
-    text = text.replace(old, new)
-
-path.write_text(text)
-PY
+echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
+"${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
 
 echo "==> Gerando Web build"
 pnpm build-web
+"${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
 
 echo "==> Instalando servidor estático"
 ${SUDO} npm install --global serve
