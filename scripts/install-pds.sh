@@ -18,7 +18,7 @@ if ! [[ "${PDS_PORT}" =~ ^[0-9]+$ ]] || (( PDS_PORT < 1024 || PDS_PORT > 65535 )
   exit 1
 fi
 
-if ${SUDO} ss -ltnH "sport = :${PDS_PORT}" 2>/dev/null | grep -q .; then
+if [[ ! -f "${PDS_DATA_DIR}/pds.env" ]] && ${SUDO} ss -ltnH "sport = :${PDS_PORT}" 2>/dev/null | grep -q .; then
   echo "ERRO: a porta local ${PDS_PORT} já está em uso."
   ${SUDO} ss -ltnp "sport = :${PDS_PORT}" || true
   exit 1
