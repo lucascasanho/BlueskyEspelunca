@@ -9,13 +9,24 @@ set -Eeuo pipefail
 
 if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
+if ! [[ "${WEB_PORT}" =~ ^[0-9]+$ ]] || (( WEB_PORT < 1024 || WEB_PORT > 65535 )); then
+  echo "WEB_PORT inválida: ${WEB_PORT}"
+  exit 1
+fi
+
+if ${SUDO} ss -ltnH "sport = :${WEB_PORT}" 2>/dev/null | grep -q .; then
+  echo "ERRO: a porta local ${WEB_PORT} já está em uso."
+  ${SUDO} ss -ltnp "sport = :${WEB_PORT}" || true
+  exit 1
+fi
+
 echo "==> Instalando Node.js 24"
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -p 'process.versions.node.split(".")[0]')" -lt 24 ]]; then
   curl -fsSL https://deb.nodesource.com/setup_24.x | ${SUDO} -E bash -
   ${SUDO} apt-get install -y nodejs
 fi
 
-echo "==> Ativando pnpm"
+echo "==> Ativando pnpm 11.23.0"
 corepack enable
 corepack prepare pnpm@11.23.0 --activate
 
@@ -43,15 +54,14 @@ pds = sys.argv[1]
 path = Path("src/lib/constants.ts")
 text = path.read_text()
 
-text = text.replace(
-    "export const BSKY_SERVICE = 'https://bsky.social'",
-    f"export const BSKY_SERVICE = 'https://{pds}'",
-)
-text = text.replace(
-    "export const BSKY_SERVICE_DID = 'did:web:bsky.social'",
-    f"export const BSKY_SERVICE_DID = 'did:web:{pds}'",
-)
+old_service = "export const BSKY_SERVICE = 'https://bsky.social'"
+old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
 
+if old_service not in text or old_did not in text:
+    raise SystemExit("Não foi possível localizar os padrões atuais de BSKY_SERVICE no upstream.")
+
+text = text.replace(old_service, f"export const BSKY_SERVICE = 'https://{pds}'")
+text = text.replace(old_did, f"export const BSKY_SERVICE_DID = 'did:web:{pds}'")
 path.write_text(text)
 PY
 
@@ -63,23 +73,33 @@ host = sys.argv[1]
 path = Path("app.config.js")
 text = path.read_text()
 
-text = text.replace("name: 'Bluesky'", "name: 'Espelunca'")
-text = text.replace("slug: 'bluesky'", "slug: 'espelunca'")
-text = text.replace("scheme: 'bluesky'", "scheme: 'espelunca'")
-text = text.replace("bundleIdentifier: 'xyz.blueskyweb.app'", "bundleIdentifier: 'blue.espelunca.app'")
-text = text.replace("package: 'xyz.blueskyweb.app'", "package: 'blue.espelunca.app'")
-text = text.replace("'applinks:bsky.app',", f"'applinks:{host}',")
-text = text.replace("host: 'bsky.app',", f"host: '{host}',")
+replacements = {
+    "name: 'Bluesky'": "name: 'Espelunca'",
+    "slug: 'bluesky'": "slug: 'espelunca'",
+    "scheme: 'bluesky'": "scheme: 'espelunca'",
+    "bundleIdentifier: 'xyz.blueskyweb.app'": "bundleIdentifier: 'blue.espelunca.app'",
+    "package: 'xyz.blueskyweb.app'": "package: 'blue.espelunca.app'",
+    "'applinks:bsky.app',": f"'applinks:{host}',",
+    "host: 'bsky.app',": f"host: '{host}',",
+}
+
+for old, new in replacements.items():
+    text = text.replace(old, new)
+
 path.write_text(text)
 PY
 
-# Expo's current social-app exposes a production web build through build-web.
-# The generated dist directory is served locally by the dedicated systemd unit.
 echo "==> Gerando Web build"
 pnpm build-web
 
 echo "==> Instalando servidor estático"
 npm install --global serve
+
+SERVE_BIN="$(command -v serve || true)"
+if [[ -z "${SERVE_BIN}" ]]; then
+  echo "ERRO: o comando 'serve' não foi encontrado após a instalação."
+  exit 1
+fi
 
 APP_USER="${SUDO_USER:-$(id -un)}"
 
@@ -95,7 +115,7 @@ Type=simple
 User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/serve -s dist -l ${WEB_PORT}
+ExecStart=${SERVE_BIN} -s dist -l ${WEB_PORT}
 Restart=always
 RestartSec=3
 
