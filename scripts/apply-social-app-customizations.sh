@@ -351,6 +351,18 @@ replace_static_splash(Path("public/index.html"), "public/index.html")
 replace_static_splash(Path("bskyweb/templates/base.html"), "bskyweb/templates/base.html")
 
 
+# Welcome modal: keep the public landing popover fully branded as Espelunca.
+welcome_modal = Path("src/components/WelcomeModal.tsx")
+text = welcome_modal.read_text()
+text = text.replace(
+    """                    Bluesky
+                  </Text>""",
+    """                    Espelunca
+                  </Text>""",
+    1,
+)
+welcome_modal.write_text(text)
+
 # Trending: default to Brazilian Portuguese, with an explicit global toggle
 # in the main Trending modules. Global mode removes both language and topic
 # personalization headers so it reflects network-wide trends.
