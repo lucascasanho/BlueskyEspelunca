@@ -52,7 +52,7 @@ rule = [
 p.write_text("\n".join(prefix + rule + out + catch) + "\n")
 PY
 
-cloudflared tunnel ingress validate --config "${CONFIG}"
+cloudflared tunnel --config "${CONFIG}" ingress validate
 sudo systemctl restart "${SERVICE}"
 
 echo "Rota do Feed instalada: https://feeds.espelunca.blue -> http://127.0.0.1:3200"
