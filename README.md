@@ -1,23 +1,26 @@
 # BlueskyEspelunca
 
-Infraestrutura para a Espelunca baseada no AT Protocol, usando o PDS oficial do Bluesky e o código oficial do aplicativo social para Web, Android e iOS.
+Infraestrutura da Espelunca baseada no AT Protocol, usando o PDS oficial do Bluesky e o código oficial do aplicativo social para Web, Android e iOS.
 
 ## Arquitetura
 
 - PDS: `https://espelunca.blue`
 - Web: `https://app.espelunca.blue`
 - Handles: `@usuario.espelunca.blue`
-- PDS oficial: clonado durante a instalação a partir de `bluesky-social/pds`
-- App oficial: clonado durante a instalação a partir de `bluesky-social/social-app`
+- PDS local: `127.0.0.1:3100`
+- Web local: `127.0.0.1:3101`
+- Cloudflare Tunnel existente: `espelunca`
 - AppView: inicialmente o AppView público do Bluesky
-- Relay: rede AT Protocol pública
-- Instalação alvo: WSL2 Ubuntu/Debian
+- Relay/crawlers: rede AT Protocol pública
+- Instalação alvo: WSL2 com systemd
 
-O repositório da Espelunca contém apenas automação e configuração. O código upstream não é copiado para cá; o instalador baixa as versões atuais dos projetos oficiais.
+A porta 80 continua pertencendo ao Mastodon da Espelunca. O instalador não instala Caddy para o PDS, porque o TLS público é terminado pelo Cloudflare Tunnel.
+
+O repositório contém apenas automação e configuração. O código upstream não é copiado para cá: o instalador baixa os projetos oficiais durante a instalação.
 
 ## Instalação
 
-No WSL:
+No WSL da Espelunca:
 
 ```bash
 git clone https://github.com/lucascasanho/BlueskyEspelunca.git ~/BlueskyEspelunca
@@ -29,45 +32,88 @@ bash install.sh
 
 O instalador:
 
-1. valida WSL/Linux;
+1. valida as portas locais dedicadas;
 2. instala dependências;
 3. instala/configura Docker Engine quando necessário;
 4. baixa o PDS oficial;
 5. cria os segredos do PDS;
-6. configura o PDS para `espelunca.blue`;
+6. executa o PDS oficial em `PDS_PORT=3100`;
 7. baixa o `social-app` oficial;
-8. aplica somente as alterações necessárias para apontar o cliente para o PDS da Espelunca;
-9. compila a versão Web;
-10. cria um serviço local para servir o Web build;
-11. gera scripts de atualização e diagnóstico.
+8. aponta o cliente para `https://espelunca.blue`;
+9. aplica a configuração de marca básica da Espelunca;
+10. compila a versão Web;
+11. publica o build local em `WEB_PORT=3101`;
+12. cria serviços systemd separados.
 
-## DNS / Cloudflare
+## Cloudflare Tunnel
 
-O PDS oficial normalmente espera acesso público em 80/443. Se a máquina estiver atrás de NAT, o instalador não substitui o túnel.
+O Tunnel existente da Espelunca pode encaminhar os serviços sem abrir 3100/3101 na Internet.
 
-Para Cloudflare Tunnel, uma configuração inicial típica é:
+No arquivo local `/home/espelunca/.cloudflared/config.yml`, use estas regras antes do catch-all:
 
-- `espelunca.blue` -> serviço local do PDS/Caddy em `https://127.0.0.1:443`
-- `*.espelunca.blue` -> o mesmo serviço
-- `app.espelunca.blue` -> Web build em `http://127.0.0.1:3001`
+```yaml
+  - hostname: app.espelunca.blue
+    service: http://127.0.0.1:3101
+  - hostname: espelunca.blue
+    service: http://127.0.0.1:3100
+  - hostname: "*.espelunca.blue"
+    service: http://127.0.0.1:3100
+```
 
-Não coloque credenciais do Cloudflare neste repositório.
+O catch-all `http_status:404` deve permanecer por último.
 
-## Comandos
+O repositório inclui `scripts/configure-tunnel.sh` para fazer esse ajuste com backup e validação. Ele não cria registros DNS nem pede credenciais novas do Cloudflare.
+
+Depois do ingress, os DNS do Cloudflare devem apontar para o Tunnel existente:
+
+```text
+espelunca.blue       CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
+app.espelunca.blue   CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
+*.espelunca.blue     CNAME  bc4501b3-4922-45e9-960b-234f622b9cc7.cfargotunnel.com
+```
+
+Esses registros devem ficar proxied pelo Cloudflare. Não coloque o UUID ou credenciais do Tunnel em arquivos públicos de configuração.
+
+## Diagnóstico
 
 ```bash
 ./scripts/status.sh
-./scripts/update.sh
-./scripts/build-web.sh
-./scripts/start-web.sh
-./scripts/stop-web.sh
+```
+
+O diagnóstico verifica:
+
+- serviço systemd do PDS;
+- serviço systemd do Web;
+- containers Docker;
+- `http://127.0.0.1:3100/xrpc/_health`;
+- Web local em 3101;
+- processos escutando nas duas portas.
+
+## Conta inicial
+
+Depois de validar o PDS e o domínio:
+
+```bash
+./scripts/create-account.sh
+```
+
+O script cria uma conta com handle `@usuario.espelunca.blue`.
+
+A senha administrativa fica somente no servidor em:
+
+```text
+/opt/espelunca-bluesky/pds-data/.admin-password
 ```
 
 ## Atualização
 
-`update.sh` atualiza os clones upstream, reaplica o patch da Espelunca e recompila o Web. O PDS é atualizado usando a ferramenta oficial quando possível.
+```bash
+./scripts/update.sh
+```
 
-Antes de atualizar uma instalação de produção, faça backup do diretório de dados do PDS.
+O script atualiza o clone de referência do PDS, baixa a imagem atual do PDS, atualiza o `social-app`, reaplica as alterações da Espelunca e recompila o Web.
+
+Faça backup de `PDS_DATA_DIR` antes de atualizações de produção.
 
 ## Android / iOS
 
@@ -79,23 +125,18 @@ pnpm android
 pnpm ios
 ```
 
-Para gerar o Web:
+## Branding e licenças
 
-```bash
-pnpm build-web
-```
+O código-fonte do `social-app` é MIT, mas o próprio projeto informa que vários ícones, ilustrações, imagens e marcas não estão cobertos pela licença MIT. Antes de distribuir publicamente um aplicativo próprio da Espelunca, substitua os assets e marcas do Bluesky conforme os termos upstream.
 
-## Importante sobre branding e licenças
-
-O código-fonte do `social-app` é MIT, mas o próprio projeto informa que vários ícones, ilustrações, imagens e marcas não estão cobertos por essa licença. Uma distribuição pública da Espelunca deve substituir os assets e marcas do Bluesky antes de ser publicada como aplicativo próprio.
-
-Este repositório, portanto, não inclui cópias desses assets. O instalador baixa o upstream para a máquina local.
+Este repositório não copia esses assets. O instalador baixa o upstream para a máquina local.
 
 Fontes e créditos:
 
 - Bluesky Social App: https://github.com/bluesky-social/social-app
 - Bluesky PDS: https://github.com/bluesky-social/pds
 - AT Protocol: https://github.com/bluesky-social/atproto
-- Documentação Expo Web: https://docs.expo.dev/guides/publishing-websites/
+- Expo Web: https://docs.expo.dev/guides/publishing-websites/
+- Cloudflare Tunnel: https://developers.cloudflare.com/tunnel/
 
 Licenças: PDS sob MIT/Apache-2.0; social-app sob MIT para o código-fonte, com exceções de assets descritas pelo próprio projeto.
