@@ -10,10 +10,15 @@ read -r -s -p "Senha: " PASSWORD
 echo
 
 FULL_HANDLE="${HANDLE}.${PDS_HOSTNAME}"
+ADMIN_PASSWORD="$(sudo cat "${PDS_DATA_DIR}/.admin-password")"
 
 echo "Criando conta ${FULL_HANDLE}..."
 
-sudo docker exec -e PDS_ADMIN_PASSWORD="$(sudo cat "${PDS_DATA_DIR}/.admin-password")"   pds goat pds admin account create   --handle "${FULL_HANDLE}"   --email "${EMAIL}"   --password "${PASSWORD}"
+sudo docker exec -e PDS_ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+  pds goat pds admin account create \
+  --handle "${FULL_HANDLE}" \
+  --email "${EMAIL}" \
+  --password "${PASSWORD}"
 
 echo
 echo "Conta criada: @${FULL_HANDLE}"
