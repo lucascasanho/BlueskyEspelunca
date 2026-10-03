@@ -66,6 +66,15 @@ No arquivo local `/home/espelunca/.cloudflared/config.yml`, o mesmo hostname ate
     path: ^/oauth-client-metadata\\.json$
     service: http://127.0.0.1:3100
   - hostname: espelunca.blue
+    path: ^/@atproto/oauth-provider/~assets/.*$
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    path: ^/@atproto/oauth-provider/~api(?:/.*)?$
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
+    path: ^/account(?:/.*)?$
+    service: http://127.0.0.1:3100
+  - hostname: espelunca.blue
     service: http://127.0.0.1:3101
   - hostname: "*.espelunca.blue"
     service: http://127.0.0.1:3100
@@ -132,6 +141,13 @@ bluesky account
 ```
 
 O comando `bluesky update` faz todo o ciclo de atualização em uma única chamada: guarda automaticamente alterações rastreadas locais em um backup Git, atualiza este repositório e depois atualiza o PDS e o Web. O arquivo local `config.env` permanece fora desse backup e não é sobrescrito.
+
+
+### Customizações do PDS
+
+O PDS oficial continua sendo usado como base. O arquivo `patches/pds/entrypoint.sh` reaplica automaticamente duas compatibilidades da Espelunca quando o container é iniciado ou recriado: permite que o hostname do próprio PDS também seja usado como handle personalizado (por exemplo, `@espelunca.blue`) e aceita ausência de `Sec-Fetch-Site` na navegação inicial de autorização OAuth. A segunda alteração é restrita à página GET de autorização; os endpoints de consentimento permanecem protegidos por validações same-origin.
+
+Essas customizações são reaplicadas pelo compose versionado e, portanto, não dependem de alterações manuais dentro do container. Elas foram criadas a partir do código oficial do AT Protocol/PDS.
 
 ### Customizações do social-app
 
