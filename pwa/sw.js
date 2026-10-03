@@ -1,4 +1,4 @@
-const CACHE_NAME = 'espelunca-pwa-v1'
+const CACHE_NAME = 'espelunca-pwa-v2'
 const SHELL_URLS = [
   '/',
   '/index.html',
