@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-sudo systemctl stop espelunca-web
+sudo systemctl stop espelunca-bluesky-web
