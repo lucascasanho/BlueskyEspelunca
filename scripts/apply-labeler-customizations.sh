@@ -35,9 +35,10 @@ else:
 
 old_import = "import {overwriteSavedFeeds, setPersonalDetails, upsertProfile} from '@bsky/sdk'"
 new_import = "import {addLabeler, overwriteSavedFeeds, setPersonalDetails, upsertProfile} from '@bsky/sdk'"
-if old_import not in text:
-    raise SystemExit("Import do @bsky/sdk não encontrado; o upstream do social-app mudou.")
-text = text.replace(old_import, new_import, 1)
+if new_import not in text:
+    if old_import not in text:
+        raise SystemExit("Import do @bsky/sdk não encontrado; o upstream do social-app mudou.")
+    text = text.replace(old_import, new_import, 1)
 
 if "type DidString" not in text:
     text = text.replace(
@@ -50,9 +51,10 @@ if "type DidString" not in text:
 
 old_moderation = "import {configureModerationForAccount} from './moderation'"
 new_moderation = "import {configureModerationForAccount, saveLabelers} from './moderation'"
-if old_moderation not in text:
-    raise SystemExit("Import de moderation não encontrado; o upstream do social-app mudou.")
-text = text.replace(old_moderation, new_moderation, 1)
+if new_moderation not in text:
+    if old_moderation not in text:
+        raise SystemExit("Import de moderation não encontrado; o upstream do social-app mudou.")
+    text = text.replace(old_moderation, new_moderation, 1)
 
 old_configure = "  configureModerationForAccount(bundle, earlyAccount)\n"
 new_configure = """  if (ESPELUNCA_LABELER_DID) {
