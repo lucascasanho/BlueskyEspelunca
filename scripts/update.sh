@@ -19,7 +19,7 @@ sudo systemctl restart espelunca-pds
 
 echo "==> Atualizando social-app"
 git -C "${APP_DIR}" fetch --prune origin
-git -C "${APP_DIR}" pull --ff-only
+git -C "${APP_DIR}" reset --hard origin/main
 
 cd "${APP_DIR}"
 pnpm install --frozen-lockfile
