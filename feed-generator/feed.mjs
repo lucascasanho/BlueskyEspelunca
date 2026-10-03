@@ -23,6 +23,8 @@ const ENV_FILE = process.env.FEEDGEN_ENV_FILE ?? '/opt/espelunca-bluesky/feed.en
 const CACHE_DIR = process.env.FEEDGEN_MODEL_CACHE ?? `${DATA_DIR}/hf-cache`
 const TOXICITY_MODEL = process.env.TOXICITY_MODEL ?? 'onnx-community/distilbert-multilingual-toxicity-classifier-ONNX'
 const TOXICITY_THRESHOLD = Number(process.env.TOXICITY_THRESHOLD ?? 0.72)
+const LANGUAGE_MODEL = process.env.FEEDGEN_LANGUAGE_MODEL ?? 'onnx-community/xlm-roberta-base-language-detection-ONNX'
+const LANGUAGE_THRESHOLD = Number(process.env.FEEDGEN_LANGUAGE_THRESHOLD ?? 0.70)
 const AI_MODEL = process.env.AI_MEDIA_MODEL ?? 'onnx-community/ai-image-detect-distilled-ONNX'
 const AI_THRESHOLD = Number(process.env.AI_MEDIA_THRESHOLD ?? 0.80)
 const AI_UNKNOWN = process.env.AI_MEDIA_UNKNOWN_ACTION ?? 'drop'
@@ -48,10 +50,12 @@ env.cacheDir = CACHE_DIR
 env.allowRemoteModels = true
 env.allowLocalModels = false
 let toxicityPipe
+let languagePipe
 let aiPipe
 
 const norm = (v = '') => String(v).normalize('NFKC').toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim()
 const textOf = (r) => norm([r?.text,r?.embed?.external?.title,r?.embed?.external?.description].filter(Boolean).join(' '))
+const languageTextOf = (r) => norm(r?.text ?? '').replace(/https?:\/\/\S+/gi,' ').replace(/\s+/g,' ').trim()
 const isPtBr = (r) => (r?.langs ?? []).map(String).some((l) => l.toLowerCase() === 'pt-br')
 const urlsOf = (r) => {
   const out = new Set()
@@ -94,13 +98,33 @@ const hasCommercialSignal = (r) => {
 }
 
 function cheapFilter(r) {
-  if (!isPtBr(r)) return 'language'
+  const langs = Array.isArray(r?.langs) ? r.langs.map(String).map(x => x.toLowerCase()) : []
+  if (langs.length && !langs.includes('pt-br')) return 'language'
   if (hasCommercialSignal(r)) return 'commercial'
   if (!topic(r)) return 'topic'
   if (urlsOf(r).some(blockedUrl)) return 'blocked-domain'
   if (hasAiMarker(r)) return 'ai-marker'
   if ((r?.labels??[]).some(x=>['hate','harassment','spam','scam'].includes(String(x?.val??x?.value??'').toLowerCase()))) return 'label'
   return null
+}
+async function languageFilter(r) {
+  const langs = Array.isArray(r?.langs) ? r.langs.map(String).map(x => x.toLowerCase()) : []
+  if (langs.length && !langs.includes('pt-br')) return 'language'
+  const text = languageTextOf(r)
+  if (text.length < 6) return 'language-short'
+  try {
+    languagePipe ??= pipeline('text-classification', LANGUAGE_MODEL, {device:MODEL_DEVICE})
+    const out = await (await languagePipe)(text.slice(0, 1000), {top_k:null, truncation:true})
+    const xs = Array.isArray(out) ? out : [out]
+    const best = xs.reduce((a,b) => Number(b?.score ?? 0) > Number(a?.score ?? 0) ? b : a, {score:0})
+    const label = String(best?.label ?? '').toLowerCase().replace(/^label[_-]?/,'')
+    const score = Number(best?.score ?? 0)
+    if (label !== 'pt' || score < LANGUAGE_THRESHOLD) return 'language-model'
+    return null
+  } catch (e) {
+    console.error(`Falha no detector de idioma: ${String(e?.message ?? e).slice(0,180)}`)
+    return 'language-model-error'
+  }
 }
 const db = () => {
   mkdirSync(dirname(DB_PATH), {recursive:true})
@@ -163,6 +187,14 @@ async function start() {
   const count=d.prepare("SELECT COUNT(*) count FROM post WHERE status='pending'")
   const mark=d.prepare('UPDATE post SET status=?,toxicityScore=?,aiScore=?,reason=? WHERE uri=?')
   const purge=d.prepare("DELETE FROM post WHERE createdAt < datetime('now', ?)")
+  async function recheckLanguage() {
+    for (const row of d.prepare("SELECT uri,recordJson FROM post WHERE status IN ('accepted','pending')").all()) {
+      try {
+        const reason = await languageFilter(JSON.parse(row.recordJson))
+        if (reason) mark.run('rejected', null, null, reason, row.uri)
+      } catch {}
+    }
+  }
   async function worker(){
     for(;;){
       const row=pending.get()
@@ -188,10 +220,12 @@ async function start() {
       if(evt.commit.operation!=='create' && evt.commit.operation!=='update')continue
       const r=evt.commit.record; if(!r)continue
       const reason=cheapFilter(r); if(reason)continue
+      const languageReason=await languageFilter(r); if(languageReason)continue
       const t=topic(r)
       insert.run({uri,cid:evt.commit.cid,authorDid:evt.did,createdAt:new Date(r.createdAt).toISOString(),topic:t.name,topicScore:t.score,text:String(r.text??''),recordJson:JSON.stringify(r),insertedAt:new Date().toISOString()})
     }
   }
+  await recheckLanguage()
   void worker(); void ingest()
   setInterval(()=>{try{purge.run(`-${RETENTION_DAYS} days`)}catch{}},3600000)
   const app=express(); app.disable('x-powered-by')
@@ -312,14 +346,10 @@ async function seed(){
     for(const p of data.posts??[]){
       fetched++
       if(!p.record||!p.author?.did||!p.uri||!p.cid){rejected++;continue}
-      // A consulta já usa lang=pt-br. Alguns resultados do índice não trazem
-      // o campo langs no registro bruto; nesse caso, confiamos no filtro de idioma
-      // do AppView para o seed, mas continuamos rejeitando explicitamente outros idiomas.
-      const seedRecord = p.record.langs && Array.isArray(p.record.langs) && p.record.langs.length
-        ? p.record
-        : {...p.record, langs:['pt-br']}
-      const reason=cheapFilter(seedRecord)
+      const reason=cheapFilter(p.record)
       if(reason){rejected++;rejectReasons[reason]=(rejectReasons[reason]??0)+1;continue}
+      const languageReason=await languageFilter(p.record)
+      if(languageReason){rejected++;rejectReasons[languageReason]=(rejectReasons[languageReason]??0)+1;continue}
       const t=topic(p.record)
       const result=ins.run({uri:p.uri,cid:p.cid,authorDid:p.author.did,createdAt:new Date(p.record.createdAt).toISOString(),topic:t.name,topicScore:t.score,text:String(p.record.text??''),recordJson:JSON.stringify(p.record),insertedAt:new Date().toISOString()})
       if(result.changes)passed++; else duplicates++
