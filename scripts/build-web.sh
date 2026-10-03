@@ -39,17 +39,17 @@ path.write_text(text)
 PY
 
 # Install the Espelunca PWA shell and assets into the generated web output.
-PWA_DIR="\${ROOT_DIR}/pwa"
-if [[ ! -f "\${PWA_DIR}/manifest.json" || ! -f "\${PWA_DIR}/sw.js" ]]; then
-  echo "ERRO: arquivos PWA ausentes em \${PWA_DIR}"
+PWA_DIR="${ROOT_DIR}/pwa"
+if [[ ! -f "${PWA_DIR}/manifest.json" || ! -f "${PWA_DIR}/sw.js" ]]; then
+  echo "ERRO: arquivos PWA ausentes em ${PWA_DIR}"
   exit 1
 fi
 
 mkdir -p dist/icons
-cp "\${PWA_DIR}/manifest.json" dist/manifest.json
-cp "\${PWA_DIR}/icons/icon-192.png" dist/icons/icon-192.png
-cp "\${PWA_DIR}/icons/icon-512.png" dist/icons/icon-512.png
-cp "\${PWA_DIR}/sw.js" dist/sw.js
+cp "${PWA_DIR}/manifest.json" dist/manifest.json
+cp "${PWA_DIR}/icons/icon-192.png" dist/icons/icon-192.png
+cp "${PWA_DIR}/icons/icon-512.png" dist/icons/icon-512.png
+cp "${PWA_DIR}/sw.js" dist/sw.js
 
 python3 - <<'PY'
 from pathlib import Path
