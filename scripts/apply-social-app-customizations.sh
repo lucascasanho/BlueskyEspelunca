@@ -350,5 +350,208 @@ def replace_static_splash(path: Path, label: str) -> None:
 replace_static_splash(Path("public/index.html"), "public/index.html")
 replace_static_splash(Path("bskyweb/templates/base.html"), "bskyweb/templates/base.html")
 
-print("Customizações de branding e tema aplicadas.")
+
+# Trending: default to Brazilian Portuguese, with an explicit global toggle
+# in the main Trending modules. Global mode removes both language and topic
+# personalization headers so it reflects network-wide trends.
+trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
+text = trends_query.read_text()
+text = text.replace("export const DEFAULT_LIMIT = 5", "export const DEFAULT_LIMIT = 10", 1)
+text = text.replace(
+    """type QueryProps = {
+  fetchLimit?: number
+  limit?: number
+  refetchOnWindowFocus?: boolean
+}""",
+    """export type TrendingScope = 'pt-BR' | 'global'
+
+type QueryProps = {
+  fetchLimit?: number
+  limit?: number
+  refetchOnWindowFocus?: boolean
+  scope?: TrendingScope
+}""",
+    1,
+)
+text = text.replace(
+    """export const createGetTrendsQueryKey = (fetchLimit?: number) =>
+  fetchLimit === undefined ? ['trends'] : ['trends', {limit: fetchLimit}]""",
+    """export const createGetTrendsQueryKey = (
+  fetchLimit?: number,
+  scope: TrendingScope = 'pt-BR',
+) =>
+  fetchLimit === undefined
+    ? ['trends', {scope}]
+    : ['trends', {limit: fetchLimit, scope}]""",
+    1,
+)
+text = text.replace(
+    """  const fetchLimit = props.fetchLimit ?? DEFAULT_FETCH_LIMIT
+  const limit = props.limit ?? DEFAULT_LIMIT""",
+    """  const fetchLimit = props.fetchLimit ?? DEFAULT_FETCH_LIMIT
+  const limit = props.limit ?? DEFAULT_LIMIT
+  const scope = props.scope ?? 'pt-BR'""",
+    1,
+)
+text = text.replace(
+    """    queryKey: createGetTrendsQueryKey(fetchLimit),
+    queryFn: async () => {
+      const contentLangs = getContentLanguages().join(',')
+      const data = await client.call(
+        app.bsky.unspecced.getTrends,
+        {
+          limit: fetchLimit,
+        },
+        {
+          headers: {
+            ...createBskyTopicsHeader(aggregateUserInterests(preferences)),
+            'Accept-Language': contentLangs,
+          },
+        },
+      )""",
+    """    queryKey: createGetTrendsQueryKey(fetchLimit, scope),
+    queryFn: async () => {
+      const headers =
+        scope === 'pt-BR'
+          ? {
+              ...createBskyTopicsHeader(aggregateUserInterests(preferences)),
+              'Accept-Language': 'pt-BR',
+            }
+          : {}
+      const data = await client.call(
+        app.bsky.unspecced.getTrends,
+        {
+          limit: fetchLimit,
+        },
+        {
+          headers,
+        },
+      )""",
+    1,
+)
+text = text.replace("import {getContentLanguages} from '#/state/preferences/languages'\n", "", 1)
+trends_query.write_text(text)
+
+explore = Path("src/screens/Search/modules/ExploreTrendingTopics.tsx")
+text = explore.read_text()
+text = text.replace("import {useMemo} from 'react'", "import {useMemo, useState} from 'react'", 1)
+text = text.replace(
+    """  const topicCount = ax.features.getValue(
+    ax.features.TrendingExploreTopicsCountValue,
+    DEFAULT_LIMIT,
+  )""",
+    """  const topicCount = DEFAULT_LIMIT
+  const [showGlobal, setShowGlobal] = useState(false)""",
+    1,
+)
+text = text.replace(
+    """    fetchLimit: Math.min(topicCount * 2, DEFAULT_FETCH_LIMIT),
+    limit: topicCount,
+  })""",
+    """    fetchLimit: Math.min(topicCount * 2, DEFAULT_FETCH_LIMIT),
+    limit: topicCount,
+    scope: showGlobal ? 'global' : 'pt-BR',
+  })""",
+    1,
+)
+marker="""          <ModuleHeader.EllipsisButton
+            label={l__BT__Trending options__BT__}
+            onPress={() => trendingPrompt.open()}
+          />"""
+replacement="""          <Link
+            label={showGlobal ? l__BT__View Brazilian trending__BT__ : l__BT__View global trending__BT__}
+            to="#"
+            onPress={() => setShowGlobal(value => !value)}>
+            {({hovered, pressed}) => (
+              <Text
+                style={[
+                  a.text_sm,
+                  a.font_medium,
+                  hovered || pressed
+                    ? [t.atoms.text, a.underline]
+                    : t.atoms.text_contrast_medium,
+                ]}>
+                {showGlobal ? <Trans>BR</Trans> : <Trans>Global</Trans>}
+              </Text>
+            )}
+          </Link>
+          <ModuleHeader.EllipsisButton
+            label={l__BT__Trending options__BT__}
+            onPress={() => trendingPrompt.open()}
+          />"""
+marker=marker.replace("__BT__",String.fromCharCode(96))
+replacement=replacement.replace("__BT__",String.fromCharCode(96))
+if marker not in text: raise SystemExit("Explore header marker não encontrado")
+text=text.replace(marker,replacement,1)
+explore.write_text(text)
+
+sidebar = Path("src/view/shell/desktop/SidebarTrendingTopics.tsx")
+text = sidebar.read_text()
+text = text.replace("import {View} from 'react-native'", "import {useState} from 'react'\nimport {View} from 'react-native'", 1)
+text = text.replace(
+    """  const exploreTopicCount = ax.features.getValue(
+    ax.features.TrendingExploreTopicsCountValue,
+    DEFAULT_LIMIT,
+  )""",
+    """  const exploreTopicCount = DEFAULT_LIMIT
+  const [showGlobal, setShowGlobal] = useState(false)""",
+    1,
+)
+text = text.replace(
+    """  } = useGetTrendsQuery({
+    refetchOnWindowFocus: true,
+  })""",
+    """  } = useGetTrendsQuery({
+    refetchOnWindowFocus: true,
+    scope: showGlobal ? 'global' : 'pt-BR',
+  })""",
+    1,
+)
+marker="""          {exploreTopicCount > DEFAULT_LIMIT ? (
+            <Link label={l__BT__See more trending topics__BT__} to="/search">
+              {({hovered, pressed}) => (
+                <Text
+                  style={[
+                    a.text_sm,
+                    a.font_medium,
+                    {
+                      color:
+                        hovered || pressed
+                          ? t.palette.contrast_800
+                          : t.palette.contrast_500,
+                    },
+                  ]}
+                  numberOfLines={1}>
+                  <Trans>See more</Trans>
+                </Text>
+              )}
+            </Link>
+          ) : null}
+          <Button"""
+replacement="""          <Link
+            label={showGlobal ? l__BT__View Brazilian trending__BT__ : l__BT__View global trending__BT__}
+            to="#"
+            onPress={() => setShowGlobal(value => !value)}>
+            {({hovered, pressed}) => (
+              <Text
+                style={[
+                  a.text_xs,
+                  a.font_medium,
+                  hovered || pressed
+                    ? [t.atoms.text, a.underline]
+                    : t.atoms.text_contrast_medium,
+                ]}
+                numberOfLines={1}>
+                {showGlobal ? <Trans>BR</Trans> : <Trans>Global</Trans>}
+              </Text>
+            )}
+          </Link>
+          <Button"""
+marker=marker.replace("__BT__",String.fromCharCode(96))
+replacement=replacement.replace("__BT__",String.fromCharCode(96))
+if marker not in text: raise SystemExit("Sidebar header marker não encontrado")
+text=text.replace(marker,replacement,1)
+sidebar.write_text(text)
+
+print("Customização de Em Alta PT-BR/global e limite 10 aplicada.")
 PY
