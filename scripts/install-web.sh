@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="${ROOT_DIR}/config.env"
+
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+  echo "config.env não existe: ${CONFIG_FILE}"
+  echo "Execute: cp config.env.example config.env"
+  exit 1
+fi
+
+# Exporta as variáveis para os processos filhos, inclusive quando este script
+# é executado diretamente fora de install.sh.
+set -a
+source "${CONFIG_FILE}"
+set +a
+
 : "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
 : "${INSTALL_DIR:?INSTALL_DIR não definido}"
 : "${APP_DIR:?APP_DIR não definido}"
