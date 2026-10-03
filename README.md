@@ -117,13 +117,29 @@ A senha administrativa fica somente no servidor em:
 /opt/espelunca-bluesky/pds-data/.admin-password
 ```
 
-## Atualização
+## Comando de administração
+
+Após a instalação, o comando global `bluesky` aponta para este clone Git. Isso mantém a automação versionada no GitHub e permite que as alterações feitas no repositório sejam aplicadas ao servidor.
 
 ```bash
-./scripts/update.sh
+bluesky status
+bluesky update
+bluesky install
+bluesky start
+bluesky stop
+bluesky tunnel
+bluesky account
 ```
 
-O script atualiza o clone de referência do PDS, baixa a imagem atual do PDS, atualiza o `social-app`, reaplica as alterações da Espelunca e recompila o Web.
+O comando `bluesky update` primeiro executa `git pull --ff-only` neste repositório e só então executa a atualização do PDS e do Web. Se houver alterações locais no repositório, o `pull --ff-only` interrompe a operação em vez de sobrescrevê-las.
+
+### Customizações do social-app
+
+O repositório não copia o código inteiro do Bluesky. O upstream é baixado em `/opt/espelunca-bluesky/social-app` durante a instalação/atualização. As alterações próprias da Espelunca ficam versionadas aqui, principalmente em `scripts/apply-social-app-customizations.sh` e, para alterações maiores, em `patches/social-app/*.patch`.
+
+Isso permite alterar a interface ou o comportamento do aplicativo no próprio GitHub e reaplicar essas alterações automaticamente depois que o upstream for atualizado.
+
+O build Web cria também `dist/static/_expo -> ../_expo`, necessário para o layout de assets produzido pelo build atual do social-app. O serviço Web é sempre `espelunca-bluesky-web.service`; o instalador não deve alterar o serviço Mastodon `espelunca-web.service`.
 
 Faça backup de `PDS_DATA_DIR` antes de atualizações de produção.
 
