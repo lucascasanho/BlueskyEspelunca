@@ -2,10 +2,15 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+set -a
 source "${ROOT_DIR}/config.env"
+set +a
 
 : "${CLOUDFLARED_CONFIG:?CLOUDFLARED_CONFIG não definido}"
 : "${CLOUDFLARED_SERVICE:?CLOUDFLARED_SERVICE não definido}"
+: "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
+: "${PDS_PORT:?PDS_PORT não definido}"
+: "${WEB_PORT:?WEB_PORT não definido}"
 
 if [[ "$(id -u)" -ne 0 ]]; then SUDO=sudo; else SUDO=; fi
 
@@ -22,12 +27,12 @@ fi
 BACKUP="${CLOUDFLARED_CONFIG}.bak.$(date +%Y%m%d-%H%M%S)"
 ${SUDO} cp "${CLOUDFLARED_CONFIG}" "${BACKUP}"
 
-python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${APP_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
+python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-pds_host, app_host, pds_port, web_port = sys.argv[2:]
+pds_host, pds_port, web_port = sys.argv[2:]
 text = path.read_text()
 
 if "ingress:" not in text:
@@ -37,7 +42,7 @@ lines = text.splitlines()
 start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
-managed = {pds_host, "*." + pds_host, app_host}
+managed = {pds_host, "*." + pds_host}
 filtered = []
 i = 0
 
@@ -61,13 +66,23 @@ for j, line in enumerate(filtered):
         break
 
 rules = [
-    "  - hostname: {}".format(app_host),
-    "    service: http://127.0.0.1:{}".format(web_port),
     "  - hostname: {}".format(pds_host),
+    "    path: ^/xrpc/.*",
     "    service: http://127.0.0.1:{}".format(pds_port),
-    "  - hostname: \"*.{}\"".format(pds_host),
+    "  - hostname: {}".format(pds_host),
+    "    path: ^/\\.well-known/.*",
     "    service: http://127.0.0.1:{}".format(pds_port),
-]
+    "  - hostname: {}".format(pds_host),
+    "    path: ^/oauth/.*",
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: {}".format(pds_host),
+    "    path: ^/oauth-client-metadata\\.json$",
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: {}".format(pds_host),
+    "    service: http://127.0.0.1:{}".format(web_port),
+    "  - hostname: \"*.{}\"" .format(pds_host),
+    "    service: http://127.0.0.1:{}".format(pds_port),
+]]
 
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
@@ -83,8 +98,11 @@ echo "Tunnel atualizado."
 echo "Backup: ${BACKUP}"
 echo
 echo "Rotas:"
-echo "  https://${APP_HOSTNAME} -> http://127.0.0.1:${WEB_PORT}"
-echo "  https://${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/xrpc/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/.well-known/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/oauth/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
 echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
 echo
 echo "Os registros DNS precisam existir no Cloudflare."
