@@ -1,0 +1,6 @@
+config.env
+*.local
+*.secret
+.env
+.env.*
+!config.env.example
