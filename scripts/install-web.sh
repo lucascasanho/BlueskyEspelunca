@@ -81,6 +81,8 @@ pnpm build-web
 echo "==> Instalando servidor estático"
 npm install --global serve
 
+APP_USER="${SUDO_USER:-$(id -un)}"
+
 echo "==> Criando serviço Web"
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-web.service >/dev/null
@@ -90,7 +92,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$(id -un)
+User=${APP_USER}
 WorkingDirectory=${APP_DIR}
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/serve -s dist -l ${WEB_PORT}
