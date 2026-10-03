@@ -17,7 +17,13 @@ set +a
 
 SCRIPT_DIR="${ROOT_DIR}/scripts"
 
-chmod +x "${SCRIPT_DIR}"/*.sh
+chmod +x "${SCRIPT_DIR}"/*.sh "${ROOT_DIR}/bluesky"
+
+if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
+
+# O comando aponta para o clone Git, portanto as futuras atualizações
+# do repositório atualizam automaticamente o comando instalado.
+${SUDO} ln -sfn "${ROOT_DIR}/bluesky" /usr/local/bin/bluesky
 
 echo "============================================================"
 echo " BLUESKY ESPELUNCA — INSTALAÇÃO"
@@ -37,14 +43,16 @@ echo "============================================================"
 echo " BLUESKY ESPELUNCA — INSTALAÇÃO CONCLUÍDA"
 echo "============================================================"
 echo
+echo "Comando instalado: bluesky"
+echo
 echo "PDS local: http://127.0.0.1:${PDS_PORT}"
 echo "Web local: http://127.0.0.1:${WEB_PORT}"
 echo
 echo "Próximo passo:"
-echo "  ${SCRIPT_DIR}/status.sh"
+echo "  bluesky status"
 echo
 echo "Depois de validar os serviços, configure o Cloudflare Tunnel:"
-echo "  ${SCRIPT_DIR}/configure-tunnel.sh"
+echo "  bluesky tunnel"
 echo
 echo "DNS:"
 echo "  ${PDS_HOSTNAME}       -> Tunnel existente"
