@@ -534,8 +534,8 @@ text = text.replace(
     1,
 )
 text = text.replace(
-    "if (pinnedFeedInfos.length ?)",
-    "if (orderedPinnedFeedInfos.length ?)",
+    "      {pinnedFeedInfos.length ? (",
+    "      {orderedPinnedFeedInfos.length ? (",
     1,
 )
 text = text.replace(
@@ -561,6 +561,13 @@ if re.search(r"\.\.\.VIDEO_SAVED_FEED", step_check):
     raise SystemExit("Validação falhou: VIDEO_SAVED_FEED voltou ao conjunto padrão do onboarding.")
 if re.search(r"\.\.\.VIDEO_SAVED_FEED", create_check):
     raise SystemExit("Validação falhou: VIDEO_SAVED_FEED voltou ao conjunto padrão do create-account.")
+
+if "orderedPinnedFeedInfos" not in home:
+    raise SystemExit("Validação falhou: Home.tsx não recebeu a ordenação canônica das abas.")
+if "feeds={orderedPinnedFeedInfos}" not in home:
+    raise SystemExit("Validação falhou: HomeHeader não está usando a ordem canônica.")
+if "orderedPinnedFeedInfos.map((feedInfo, index) => {" not in home:
+    raise SystemExit("Validação falhou: páginas da Home não estão usando a ordem canônica.")
 
 # Keep only the supported upstream trending behavior and our 10-topic limit.
 trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
