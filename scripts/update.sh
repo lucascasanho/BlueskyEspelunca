@@ -44,6 +44,8 @@ sudo systemctl restart espelunca-pds
 
 echo "==> Atualizando social-app e serviço Web"
 "${ROOT_DIR}/scripts/install-web.sh"
+echo "==> Atualizando Feed Generator"
+"${ROOT_DIR}/scripts/install-feed-generator.sh"
 
 echo
 echo "Atualização concluída."
