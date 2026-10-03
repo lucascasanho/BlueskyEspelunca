@@ -65,7 +65,7 @@ rules = [
     f"    service: http://127.0.0.1:{web_port}",
     f"  - hostname: {pds_host}",
     f"    service: http://127.0.0.1:{pds_port}",
-    f"  - hostname: *.{pds_host}",
+    f"  - hostname: \"*.{pds_host}\",
     f"    service: http://127.0.0.1:{pds_port}",
 ]
 
