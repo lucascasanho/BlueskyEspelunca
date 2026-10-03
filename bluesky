@@ -15,6 +15,7 @@ Uso:
   bluesky tunnel
   bluesky account
   bluesky feed <comando>
+  bluesky ozone <comando>
 
 Comandos:
   update   Atualiza este repositório e aplica a atualização do BlueskyEspelunca.
@@ -24,6 +25,15 @@ Comandos:
   stop     Para o Web.
   tunnel   Configura/valida o Cloudflare Tunnel existente.
   account  Cria uma conta no PDS.
+
+Ozone Labeler:
+  ozone install    Instala o Ozone e prepara a assinatura do Labeler.
+  ozone start      Inicia o Ozone.
+  ozone stop       Para o Ozone.
+  ozone restart    Reinicia o Ozone.
+  ozone status     Mostra estado e healthcheck.
+  ozone logs       Mostra logs.
+  ozone update     Atualiza as imagens do Ozone.
 
 Feed Espelunca BR:
   feed install    Instala/atualiza o Feed Generator.
@@ -81,6 +91,9 @@ case "${command}" in
     ;;
   feed)
     exec "${ROOT_DIR}/scripts/feed.sh" "${@:2}"
+    ;;
+  ozone)
+    exec bash "${ROOT_DIR}/scripts/ozone.sh" "${@:2}"
     ;;
   ""|-h|--help|help)
     usage

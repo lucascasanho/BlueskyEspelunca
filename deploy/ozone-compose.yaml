@@ -1,0 +1,59 @@
+services:
+  postgres:
+    container_name: espelunca-ozone-postgres
+    image: postgres:14.11-bookworm
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1", "-p", "${OZONE_DB_PORT}"]
+    network_mode: host
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p ${OZONE_DB_PORT} -U $$POSTGRES_USER"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - type: bind
+        source: ${OZONE_DATA_DIR}/postgres
+        target: /var/lib/postgresql/data
+    env_file:
+      - ${POSTGRES_ENV_FILE}
+
+  ozone:
+    container_name: espelunca-ozone
+    image: ghcr.io/bluesky-social/ozone:0.1
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ${OZONE_ENV_FILE}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  ozone-daemon:
+    container_name: espelunca-ozone-daemon
+    image: ghcr.io/bluesky-social/ozone:0.1
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      ozone:
+        condition: service_healthy
+    env_file:
+      - ${OZONE_ENV_FILE}
+    command: ["node", "./service/daemon.js"]
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  watchtower:
+    container_name: espelunca-ozone-watchtower
+    image: nickfedor/watchtower:latest
+    network_mode: host
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_SCHEDULE: "@midnight"
+      WATCHTOWER_LABEL_ENABLE: "true"

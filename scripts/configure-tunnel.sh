@@ -27,12 +27,12 @@ fi
 BACKUP="${CLOUDFLARED_CONFIG}.bak.$(date +%Y%m%d-%H%M%S)"
 ${SUDO} cp "${CLOUDFLARED_CONFIG}" "${BACKUP}"
 
-python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
+python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" "${OZONE_TUNNEL_ENABLED:-false}" "${OZONE_HOSTNAME:-}" "${OZONE_PORT:-3300}" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-pds_host, pds_port, web_port = sys.argv[2:]
+pds_host, pds_port, web_port, ozone_enabled, ozone_host, ozone_port = sys.argv[2:]
 text = path.read_text()
 
 if "ingress:" not in text:
@@ -43,6 +43,8 @@ start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
 managed = {pds_host, "*." + pds_host}
+if ozone_enabled == "true" and ozone_host:
+    managed.add(ozone_host)
 filtered = []
 i = 0
 
@@ -80,9 +82,16 @@ rules = [
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
     "    service: http://127.0.0.1:{}".format(web_port),
+]
+if ozone_enabled == "true" and ozone_host:
+    rules.extend([
+        "  - hostname: {}".format(ozone_host),
+        "    service: http://127.0.0.1:{}".format(ozone_port),
+    ])
+rules.extend([
     "  - hostname: \"*.{}\"" .format(pds_host),
     "    service: http://127.0.0.1:{}".format(pds_port),
-]]
+])
 
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
@@ -103,6 +112,9 @@ echo "  https://${PDS_HOSTNAME}/.well-known/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
+if [[ "${OZONE_TUNNEL_ENABLED:-false}" == "true" ]]; then
+  echo "  https://${OZONE_HOSTNAME}/* -> http://127.0.0.1:${OZONE_PORT}"
+fi
 echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
 echo
 echo "Os registros DNS precisam existir no Cloudflare."

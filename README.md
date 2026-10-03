@@ -183,6 +183,44 @@ A lista de paywalls é uma lista configurada de domínios conhecidos, não uma d
 - Transformers.js: `@huggingface/transformers`
 - Modelos ONNX da organização `onnx-community`
 
+## Labeler e moderação com Ozone
+
+A Espelunca pode operar um serviço próprio de Labeler usando o Ozone oficial do Bluesky/AT Protocol.
+
+A instalação é separada da instalação principal. Primeiro crie a conta de serviço:
+
+```bash
+bluesky account
+```
+
+Use o handle `moderacao`, produzindo `@moderacao.espelunca.blue`.
+
+Depois:
+
+```bash
+bluesky ozone install
+bluesky tunnel
+```
+
+O serviço fica em `https://ozone.espelunca.blue`, usa PostgreSQL separado e mantém a chave de assinatura fora do Git. O Ozone serve tanto para aplicar labels em contas da `espelunca.blue` quanto em contas externas do AT Protocol.
+
+Quando `ESPELUNCA_LABELER_DID` estiver configurado, o Web da Espelunca assina automaticamente contas novas no Labeler usando `addLabeler`. A assinatura continua removível pelo usuário.
+
+Depois de o Ozone estar online, o anúncio do Labeler e a criação de labels são feitos pela interface do Ozone. Para o selo de verificação, a configuração proposta é `espelunca-verificado` com severidade `inform` e `blurs=none`.
+
+Comandos:
+
+```bash
+bluesky ozone status
+bluesky ozone logs
+bluesky ozone update
+```
+
+Fontes e créditos:
+- Bluesky Ozone: https://github.com/bluesky-social/ozone
+- AT Protocol, criação de Labeler: https://atproto.com/guides/creating-a-labeler
+- AT Protocol, moderação: https://github.com/bluesky-social/bsky-docs/blob/main/docs/advanced-guides/moderation.md
+
 ## Android / iOS
 
 O mesmo clone do `social-app` é usado para desenvolvimento nativo. O WSL pode preparar o projeto Android, mas publicação iOS exige o ecossistema Apple/Xcode fora do WSL.

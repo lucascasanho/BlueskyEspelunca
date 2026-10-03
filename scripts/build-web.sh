@@ -10,6 +10,7 @@ set +a
 
 cd "${APP_DIR}"
 "${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
+bash "${ROOT_DIR}/scripts/apply-labeler-customizations.sh"
 pnpm build-web
 
 # Apply web-only branding to the generated static shell.
