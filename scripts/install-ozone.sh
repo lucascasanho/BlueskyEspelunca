@@ -90,7 +90,7 @@ LOG_ENABLED=1
 EOF
 ${SUDO} chmod 600 "${OZONE_ENV_FILE}"
 
-${SUDO} ${SUDO} cp "${ROOT_DIR}/deploy/ozone-compose.yaml" "${COMPOSE_FILE}"
+${SUDO} cp "${ROOT_DIR}/deploy/ozone-compose.yaml" "${COMPOSE_FILE}"
 ${SUDO} chmod 600 "${COMPOSE_FILE}"
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-ozone.service >/dev/null
