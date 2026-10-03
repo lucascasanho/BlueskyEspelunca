@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+SELF_PATH="$(readlink -f -- "${BASH_SOURCE[0]}")"
+ROOT_DIR="$(cd -- "$(dirname -- "${SELF_PATH}")" && pwd)"
 
 usage() {
   cat <<'EOF'
