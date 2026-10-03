@@ -17,21 +17,34 @@ SCRIPT_DIR="${ROOT_DIR}/scripts"
 
 chmod +x "${SCRIPT_DIR}"/*.sh
 
+echo "============================================================"
+echo " BLUESKY ESPELUNCA — INSTALAÇÃO"
+echo "============================================================"
+echo
+echo "PDS: https://${PDS_HOSTNAME}"
+echo "Web: https://${APP_HOSTNAME}"
+echo "PDS local: ${PDS_PORT}"
+echo "Web local: ${WEB_PORT}"
+echo
+
 "${SCRIPT_DIR}/install-pds.sh"
 "${SCRIPT_DIR}/install-web.sh"
 
 echo
 echo "============================================================"
-echo " BLUESKY ESPelunca — INSTALAÇÃO CONCLUÍDA"
+echo " BLUESKY ESPELUNCA — INSTALAÇÃO CONCLUÍDA"
 echo "============================================================"
 echo
-echo "PDS: https://${PDS_HOSTNAME}"
-echo "Web: https://${APP_HOSTNAME}"
+echo "PDS local: http://127.0.0.1:${PDS_PORT}"
+echo "Web local: http://127.0.0.1:${WEB_PORT}"
 echo
-echo "Verifique:"
+echo "Próximo passo:"
 echo "  ${SCRIPT_DIR}/status.sh"
 echo
-echo "Se a máquina estiver atrás do Cloudflare Tunnel, configure:"
-echo "  ${PDS_HOSTNAME}     -> https://127.0.0.1:443"
-echo "  *.${PDS_HOSTNAME}   -> https://127.0.0.1:443"
-echo "  ${APP_HOSTNAME}     -> http://127.0.0.1:${WEB_PORT}"
+echo "Depois de validar os serviços, configure o Cloudflare Tunnel:"
+echo "  ${SCRIPT_DIR}/configure-tunnel.sh"
+echo
+echo "DNS:"
+echo "  ${PDS_HOSTNAME}       -> Tunnel existente"
+echo "  ${APP_HOSTNAME}       -> Tunnel existente"
+echo "  *.${PDS_HOSTNAME}     -> Tunnel existente"
