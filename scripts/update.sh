@@ -38,6 +38,9 @@ if [[ -d "${INSTALL_DIR}/pds-src/.git" ]]; then
   git -C "${INSTALL_DIR}/pds-src" pull --ff-only
 fi
 
+echo "==> Atualizando configuração do compose do PDS"
+"${ROOT_DIR}/scripts/configure-pds-compose.sh"
+
 echo "==> Atualizando imagem do PDS"
 sudo docker compose --file "${PDS_DATA_DIR}/compose.yaml" pull pds
 sudo systemctl restart espelunca-pds
