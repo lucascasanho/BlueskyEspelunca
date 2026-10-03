@@ -213,10 +213,17 @@ function pdsFromDidDocument(doc){
   return endpoint
 }
 async function resolvePublisherPds(identifier){
-  const value = identifier.trim()
+  const value = identifier.trim().replace(/^@/,'')
   let did = value
   if(!value.startsWith('did:')){
-    const encoded = encodeURIComponent(value)
+    let handle = value
+    if(!handle.includes('.')){
+      try {
+        const host = new URL(PDS_SERVICE).hostname
+        handle = handle + '.' + host
+      } catch {}
+    }
+    const encoded = encodeURIComponent(handle)
     let resolved
     try {
       resolved = await fetchJson(`${PDS_SERVICE}/xrpc/com.atproto.identity.resolveHandle?handle=${encoded}`)
@@ -224,7 +231,7 @@ async function resolvePublisherPds(identifier){
       resolved = await fetchJson(`https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${encoded}`)
     }
     did = String(resolved?.did ?? '')
-    if(!did.startsWith('did:')) throw new Error('Não foi possível resolver o handle para um DID')
+    if(!did.startsWith('did:')) throw new Error(`Não foi possível resolver o handle "${handle}" para um DID`)
   }
   const doc = await resolveDidDocument(did)
   if(doc?.id && doc.id !== did) throw new Error('DID Document retornou um DID diferente do identificador informado')
