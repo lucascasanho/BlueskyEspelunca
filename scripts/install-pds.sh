@@ -118,6 +118,14 @@ PDS_RATE_LIMITS_ENABLED=true
 PDS_INVITE_REQUIRED=true
 EOF
 
+# SMTP é opcional para o processo iniciar, mas é necessário para envio de e-mails.
+if [[ -n "\${PDS_EMAIL_SMTP_URL:-}" ]]; then
+  printf '%s\n' "PDS_EMAIL_SMTP_URL=\${PDS_EMAIL_SMTP_URL}" | \${SUDO} tee -a "\${PDS_DATA_DIR}/pds.env" >/dev/null
+fi
+if [[ -n "\${PDS_EMAIL_FROM_ADDRESS:-}" ]]; then
+  printf '%s\n' "PDS_EMAIL_FROM_ADDRESS=\${PDS_EMAIL_FROM_ADDRESS}" | \${SUDO} tee -a "\${PDS_DATA_DIR}/pds.env" >/dev/null
+fi
+
 ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
 
 # O PDS oficial usa PDS_PORT para sua porta HTTP.
