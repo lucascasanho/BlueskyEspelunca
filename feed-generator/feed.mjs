@@ -237,8 +237,10 @@ async function resolvePublisherPds(identifier){
   if(doc?.id && doc.id !== did) throw new Error('DID Document retornou um DID diferente do identificador informado')
   return {did, pds: pdsFromDidDocument(doc)}
 }
-async function xrpc(baseUrl,method,body){
-  const r=await fetch(`${baseUrl}/xrpc/${method}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
+async function xrpc(baseUrl,method,body,accessJwt=''){
+  const headers={'content-type':'application/json'}
+  if(accessJwt) headers.authorization=`Bearer ${accessJwt}`
+  const r=await fetch(`${baseUrl}/xrpc/${method}`,{method:'POST',headers,body:JSON.stringify(body)})
   const j=await r.json().catch(()=>({}))
   if(!r.ok)throw new Error(`${method} HTTP ${r.status}: ${JSON.stringify(j)}`)
   return j
@@ -251,7 +253,7 @@ async function publish(){
   const {did,pds}=await resolvePublisherPds(identifier)
   console.log(`PDS da conta detectado: ${pds}`)
   const session=await xrpc(pds,'com.atproto.server.createSession',{identifier:identifier.trim(),password:password.trim()})
-  await xrpc(pds,'com.atproto.repo.putRecord',{repo:session.did,collection:'app.bsky.feed.generator',rkey:RECORD_NAME,validate:true,record:{$type:'app.bsky.feed.generator',did:SERVICE_DID,displayName:FEED_NAME,description:FEED_DESCRIPTION,createdAt:new Date().toISOString()}})
+  await xrpc(pds,'com.atproto.repo.putRecord',{repo:session.did,collection:'app.bsky.feed.generator',rkey:RECORD_NAME,validate:true,record:{$type:'app.bsky.feed.generator',did:SERVICE_DID,displayName:FEED_NAME,description:FEED_DESCRIPTION,createdAt:new Date().toISOString()}},session.accessJwt)
   let text=''; try{text=readFileSync(ENV_FILE,'utf8')}catch{}
   const line=`FEEDGEN_PUBLISHER_DID=${session.did}`
   text=/^FEEDGEN_PUBLISHER_DID=/m.test(text)?text.replace(/^FEEDGEN_PUBLISHER_DID=.*$/m,line):text+`${text&&!text.endsWith('\n')?'\n':''}${line}\n`
