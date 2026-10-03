@@ -119,4 +119,153 @@ if old not in text:
 path.write_text(text.replace(old, new, 1))
 PY
 
+
+# Replace Bluesky visual marks with the Espelunca icon and name.
+python3 "\${ROOT_DIR}/espelunca-icon.svg" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+icon_path = Path(sys.argv[1])
+icon = icon_path.read_text()
+icon_match = re.search(r"<path\b[^>]*\bd=\"([^\"]+)\"", icon, re.IGNORECASE)
+if not icon_match:
+    raise SystemExit("Não foi possível extrair o path do espelunca-icon.svg.")
+icon_d = icon_match.group(1)
+
+def replace_path_d(path: Path, pattern: str, label: str) -> None:
+    text = path.read_text()
+    match = re.search(pattern, text, re.DOTALL)
+    if not match:
+        raise SystemExit(f"Não foi possível localizar {label} no upstream.")
+    text = text[:match.start(2)] + icon_d + text[match.end(2):]
+    path.write_text(text)
+
+logo = Path("src/view/icons/Logo.tsx")
+logo_text = logo.read_text()
+if "const ratio = 57 / 64" in logo_text:
+    logo_text = logo_text.replace("const ratio = 57 / 64", "const ratio = 1", 1)
+if 'viewBox="0 0 64 57"' in logo_text:
+    logo_text = logo_text.replace('viewBox="0 0 64 57"', 'viewBox="0 0 640 640"', 1)
+logo.write_text(logo_text)
+replace_path_d(
+    logo,
+    r'(<Path\s*\n\s*fill=\{_fill\}\s*\n\s*d=")([^"]+)(")',
+    "o desenho do Logo",
+)
+
+mark = Path("src/view/icons/Logomark.tsx")
+mark_text = mark.read_text()
+if "const ratio = 54 / 61" in mark_text:
+    mark_text = mark_text.replace("const ratio = 54 / 61", "const ratio = 1", 1)
+if 'viewBox="0 0 61 54"' in mark_text:
+    mark_text = mark_text.replace('viewBox="0 0 61 54"', 'viewBox="0 0 640 640"', 1)
+mark.write_text(mark_text)
+replace_path_d(
+    mark,
+    r'(<Path\s*\n\s*fill=\{fill \|\| pal\.text\.color\}\s*\n\s*d=")([^"]+)(")',
+    "o desenho do Logomark",
+)
+
+Path("src/view/icons/Logotype.tsx").write_text("""import Svg, {Text as SvgText, type PathProps, type SvgProps} from 'react-native-svg'
+
+import {usePalette} from '#/lib/hooks/usePalette'
+
+const ratio = 17 / 120
+
+export function Logotype({
+  fill,
+  ...rest
+}: {fill?: PathProps['fill']} & SvgProps) {
+  const pal = usePalette('default')
+  // @ts-expect-error it's fiiiiine
+  const size = parseInt(String(rest.width || 32), 10)
+
+  return (
+    <Svg
+      fill="none"
+      viewBox="0 0 120 17"
+      {...rest}
+      width={size}
+      height={Number(size) * ratio}>
+      <SvgText
+        x="0"
+        y="13.5"
+        fill={fill || pal.text.color}
+        fontSize="15"
+        fontWeight="700"
+        letterSpacing="0.1">
+        Espelunca
+      </SvgText>
+    </Svg>
+  )
+}
+""")
+
+Path("src/view/icons/LogomarkWithType.tsx").write_text("""import Svg, {Path, Text as SvgText, type PathProps, type SvgProps} from 'react-native-svg'
+
+import {useTheme} from '#/alf'
+
+const ratio = 31 / 160
+const iconScale = 31 / 640
+
+export function LogomarkWithType({
+  fill,
+  ...rest
+}: {fill?: PathProps['fill']} & SvgProps) {
+  const t = useTheme()
+  const size = parseInt(String(rest.width || 32), 10)
+
+  return (
+    <Svg
+      fill="none"
+      viewBox="0 0 160 31"
+      {...rest}
+      width={size}
+      height={Number(size) * ratio}>
+      <Path
+        d="__ESP_ICON_D__"
+        fill={fill || t.atoms.text.color}
+        transform={'scale(' + iconScale + ')'}
+      />
+      <SvgText
+        x="39"
+        y="22"
+        fill={fill || t.atoms.text.color}
+        fontSize="21"
+        fontWeight="700"
+        letterSpacing="0.15">
+        Espelunca
+      </SvgText>
+    </Svg>
+  )
+}
+""".replace("__ESP_ICON_D__", icon_d))
+
+splash = Path("src/Splash.tsx")
+splash_text = splash.read_text()
+if 'viewBox="0 0 64 66"' in splash_text:
+    splash_text = splash_text.replace('viewBox="0 0 64 66"', 'viewBox="0 0 640 640"', 1)
+splash_text = splash_text.replace("const height = width * (67 / 64)", "const height = width", 1)
+splash.write_text(splash_text)
+replace_path_d(
+    splash,
+    r'(<Path\s*\n\s*fill=\{props\.fill \|\| \x27#fff\x27\}\s*\n\s*d=")([^"]+)(")',
+    "o desenho do logo do splash",
+)
+
+app_config = Path("app.config.js")
+app_text = app_config.read_text()
+app_text, count = re.sub(
+    r"CFBundleSpokenName:\s*'[^']*'",
+    "CFBundleSpokenName: 'Espelunca'",
+    app_text,
+    count=1,
+)
+if count != 1:
+    raise SystemExit("Não foi possível configurar CFBundleSpokenName.")
+app_config.write_text(app_text)
+
+PY
+
 echo "==> Customizações de código/configuração aplicadas."
