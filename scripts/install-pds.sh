@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
 : "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
 : "${PDS_ADMIN_EMAIL:?PDS_ADMIN_EMAIL não definido}"
 : "${INSTALL_DIR:?INSTALL_DIR não definido}"
@@ -139,33 +141,9 @@ ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
 
 # O PDS oficial usa PDS_PORT para sua porta HTTP.
 # O Caddy oficial não é usado aqui porque 80/443 já pertencem ao Mastodon.
-cat <<EOF | ${SUDO} tee "${PDS_DATA_DIR}/compose.yaml" >/dev/null
-services:
-  pds:
-    container_name: pds
-    image: ghcr.io/bluesky-social/pds:0.4
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - type: bind
-        source: ${PDS_DATA_DIR}
-        target: /pds
-    env_file:
-      - ${PDS_DATA_DIR}/pds.env
-
-  watchtower:
-    container_name: espelunca-pds-watchtower
-    image: ghcr.io/nicholas-fedor/watchtower:latest
-    network_mode: host
-    volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-    restart: unless-stopped
-    environment:
-      WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_SCHEDULE: "@midnight"
-EOF
+# O compose recebe também o entrypoint versionado da Espelunca, que reaplica
+# as customizações quando o container é recriado pelo Watchtower.
+"${ROOT_DIR}/scripts/configure-pds-compose.sh"
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-pds.service >/dev/null
 [Unit]
