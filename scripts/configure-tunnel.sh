@@ -91,7 +91,7 @@ rules = [
     "    service: http://127.0.0.1:{}".format(web_port),
     "  - hostname: \"*.{}\"" .format(pds_host),
     "    service: http://127.0.0.1:{}".format(pds_port),
-]]
+]
 
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
