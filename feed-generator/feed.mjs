@@ -89,11 +89,11 @@ const hasCommercialSignal = (r) => {
   if (urls.some(commercialUrl)) return true
   const marker = COMMERCIAL_MARKERS.some(m => t.includes(norm(m)))
   if (!marker) return false
-  return urls.length > 0 || /\\br\\$\\s?\\d|\\b\\d{1,5}[,.]\\d{2}\\s?reais\\b/i.test(t) || ['compre','comprar','venda','vendo','vendemos','oferta','ofertas','promoção','promocao','cupom','desconto','afiliado','patrocinado','publicidade','publi'].some(m => t.includes(norm(m)))
+  return urls.length > 0 || /\br\$\s?\d|\b\d{1,5}[,.]\d{2}\s?reais\b/i.test(t) || ['compre','comprar','venda','vendo','vendemos','oferta','ofertas','promoção','promocao','cupom','desconto','afiliado','patrocinado','publicidade','publi'].some(m => t.includes(norm(m)))
 }
 
 function cheapFilter(r) {
-  return urls.length > 0 || /\br\$\s?\d|\b\d{1,5}[,.]\d{2}\s?reais\b/i.test(t) || ['compre','comprar','venda','vendo','vendemos','oferta','ofertas','promoção','promocao','cupom','desconto','afiliado','patrocinado','publicidade','publi'].some(m => t.includes(norm(m)))
+  if (!isPtBr(r)) return 'language'
   if (hasCommercialSignal(r)) return 'commercial'
   if (!topic(r)) return 'topic'
   if (urlsOf(r).some(blockedUrl)) return 'blocked-domain'
