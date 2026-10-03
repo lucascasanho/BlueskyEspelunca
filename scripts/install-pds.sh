@@ -7,11 +7,7 @@ set -Eeuo pipefail
 : "${PDS_DATA_DIR:?PDS_DATA_DIR não definido}"
 : "${PDS_PORT:?PDS_PORT não definido}"
 
-if [[ "$(id -u)" -ne 0 ]]; then
-  SUDO=sudo
-else
-  SUDO=
-fi
+if [[ "$(id -u)" -ne 0 ]]; then SUDO=sudo; else SUDO=; fi
 
 if ! grep -qiE '(microsoft|wsl)' /proc/version 2>/dev/null; then
   echo "Aviso: este script foi projetado para WSL2, mas continuará em Linux."
@@ -42,7 +38,6 @@ if ! command -v docker >/dev/null 2>&1; then
   ${SUDO} install -m 0755 -d /etc/apt/keyrings
   curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release && echo "$ID")/gpg" |
     ${SUDO} gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
-
   ${SUDO} chmod a+r /etc/apt/keyrings/docker.gpg
 
   . /etc/os-release
@@ -77,8 +72,6 @@ else
   git -C "${INSTALL_DIR}/pds-src" fetch --tags --prune
   git -C "${INSTALL_DIR}/pds-src" pull --ff-only
 fi
-
-echo "==> Preparando configuração do PDS"
 
 PDS_ADMIN_PASSWORD_FILE="${PDS_DATA_DIR}/.admin-password"
 JWT_SECRET_FILE="${PDS_DATA_DIR}/.jwt-secret"
@@ -127,9 +120,8 @@ EOF
 
 ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
 
-# A imagem oficial do PDS escuta em PDS_PORT. Mantemos network_mode=host
-# para que o serviço possa ser alcançado pelo Cloudflare Tunnel no WSL,
-# mas usamos uma porta dedicada para não tocar no Mastodon (80/3001).
+# O PDS oficial usa PDS_PORT para sua porta HTTP.
+# O Caddy oficial não é usado aqui porque 80/443 já pertencem ao Mastodon.
 cat <<EOF | ${SUDO} tee "${PDS_DATA_DIR}/compose.yaml" >/dev/null
 services:
   pds:
@@ -192,6 +184,3 @@ echo "Admin password armazenada em: ${PDS_ADMIN_PASSWORD_FILE}"
 echo
 echo "Teste local:"
 echo "  curl http://127.0.0.1:${PDS_PORT}/xrpc/_health"
-echo
-echo "Cloudflare Tunnel:"
-echo "  ${PDS_HOSTNAME} e *.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
