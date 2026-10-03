@@ -38,6 +38,26 @@ if favicon not in text:
 path.write_text(text)
 PY
 
+# Keep the PWA manifest branded as Espelunca when Expo emits one.
+python3 - <<'PY'
+from pathlib import Path
+import json
+
+path = Path("dist/manifest.json")
+if path.exists():
+    data = json.loads(path.read_text())
+    data["name"] = "Espelunca"
+    data["short_name"] = "Espelunca"
+    data["icons"] = [
+        {
+            "src": "/espelunca-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+        }
+    ]
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+PY
+
 mkdir -p dist/static
 ln -sfn ../_expo dist/static/_expo
 sudo systemctl restart espelunca-bluesky-web.service
