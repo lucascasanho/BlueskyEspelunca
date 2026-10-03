@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT_DIR="\$(cd -- "\$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 set -a
 source "${ROOT_DIR}/config.env"
 set +a
@@ -13,7 +13,7 @@ set +a
 : "${OZONE_DATA_DIR}"
 : "${OZONE_SERVICE_ACCOUNT_HANDLE}"
 
-if [[ "\$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
+if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
 command -v docker >/dev/null 2>&1 || {
   echo "Docker não encontrado. Execute a instalação principal primeiro."
@@ -21,7 +21,7 @@ command -v docker >/dev/null 2>&1 || {
 }
 
 echo "==> Resolvendo @${OZONE_SERVICE_ACCOUNT_HANDLE}"
-SERVICE_DID="\$(
+SERVICE_DID="$(
   curl --fail --silent --show-error \
     "https://api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=${OZONE_SERVICE_ACCOUNT_HANDLE}" |
     jq --raw-output '.did'
@@ -58,9 +58,9 @@ if [[ ! -s "${POSTGRES_PASSWORD_FILE}" ]]; then
   ${SUDO} chmod 600 "${POSTGRES_PASSWORD_FILE}"
 fi
 
-OZONE_ADMIN_PASSWORD="\$(${SUDO} cat "${ADMIN_PASSWORD_FILE}")"
-OZONE_SIGNING_KEY_HEX="\$(${SUDO} cat "${SIGNING_KEY_FILE}")"
-POSTGRES_PASSWORD="\$(${SUDO} cat "${POSTGRES_PASSWORD_FILE}")"
+OZONE_ADMIN_PASSWORD="$(${SUDO} cat "${ADMIN_PASSWORD_FILE}")"
+OZONE_SIGNING_KEY_HEX="$(${SUDO} cat "${SIGNING_KEY_FILE}")"
+POSTGRES_PASSWORD="$(${SUDO} cat "${POSTGRES_PASSWORD_FILE}")"
 ADMIN_DIDS="${SERVICE_DID}${OZONE_ADMIN_DIDS_EXTRA:+,${OZONE_ADMIN_DIDS_EXTRA}}"
 
 cat <<EOF | ${SUDO} tee "${POSTGRES_ENV_FILE}" >/dev/null
