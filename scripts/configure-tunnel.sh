@@ -42,7 +42,9 @@ lines = text.splitlines()
 start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
-managed = {pds_host, "*." + pds_host}\nif ozone_enabled == "true" and ozone_host:\n    managed.add(ozone_host)
+managed = {pds_host, "*." + pds_host}
+if ozone_enabled == "true" and ozone_host:
+    managed.add(ozone_host)
 filtered = []
 i = 0
 
@@ -80,9 +82,18 @@ rules = [
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
     "    service: http://127.0.0.1:{}".format(web_port),
+    "  - hostname: {}".format(pds_host),
+    "    service: http://127.0.0.1:{}".format(web_port),
+]
+if ozone_enabled == "true" and ozone_host:
+    rules.extend([
+        "  - hostname: {}".format(ozone_host),
+        "    service: http://127.0.0.1:{}".format(ozone_port),
+    ])
+rules.extend([
     "  - hostname: \"*.{}\"" .format(pds_host),
     "    service: http://127.0.0.1:{}".format(pds_port),
-]]
+])
 
 path.write_text("\n".join(prefix + rules + filtered + catch) + "\n")
 PY
