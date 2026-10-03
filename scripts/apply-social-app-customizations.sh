@@ -423,11 +423,7 @@ feed_import_anchor = """  ESPELUNCA_BR_FEED_URI,
   DISCOVER_SAVED_FEED,"""
 if feed_import_anchor not in text:
     raise SystemExit("Não foi possível localizar a importação do feed Espelunca.")
-feeds_anchor = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
-            {
-              ...DISCOVER_SAVED_FEED,
-              id: TID.nextStr(),
-            },"""
+feeds_pattern = r"""          const feedsToSave: app\.bsky\.actor\.defs\.SavedFeed\[\] = \[.*?          \]\n\n          // Any Starter Pack feeds"""
 feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
             {
               ...TIMELINE_SAVED_FEED,
@@ -442,12 +438,50 @@ feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = 
             {
               ...DISCOVER_SAVED_FEED,
               id: TID.nextStr(),
-            },"""
-if feeds_anchor in text:
-    text = text.replace(feeds_anchor, feed_custom, 1)
-elif feed_custom not in text:
-    raise SystemExit("Não foi possível localizar a lista de feeds padrão no StepFinished.")
+            },
+          ]
+
+          // Any Starter Pack feeds"""
+text, count = re.subn(feeds_pattern, feed_custom, text, count=1, flags=re.DOTALL)
+if count != 1:
+    raise SystemExit("Não foi possível substituir a lista de feeds padrão no StepFinished.")
 step_finished.write_text(text)
+
+# The upstream account-creation flow also initializes feeds asynchronously.
+# Keep the same canonical order so it cannot race with onboarding and restore
+# a different default set.
+create_account = Path("src/state/session/create-account.ts")
+text = create_account.read_text()
+text = re.sub(
+    r"""  DISCOVER_SAVED_FEED,
+  IS_PROD_SERVICE,
+  TIMELINE_SAVED_FEED,""",
+    """  DISCOVER_SAVED_FEED,
+  ESPELUNCA_BR_FEED_URI,
+  IS_PROD_SERVICE,
+  TIMELINE_SAVED_FEED,""",
+    text,
+    count=1,
+)
+create_feed_pattern = r"""function initializeSavedFeeds\(client: Client\) \{.*?\n\}"""
+create_feed_custom = """function initializeSavedFeeds(client: Client) {
+  return retryPostSignupTask('set initial feeds', 1, () =>
+    client.call(overwriteSavedFeeds, [
+      {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
+      {
+        type: 'feed',
+        value: ESPELUNCA_BR_FEED_URI,
+        pinned: true,
+        id: TID.nextStr(),
+      },
+      {...DISCOVER_SAVED_FEED, id: TID.nextStr()},
+    ]),
+  )
+}"""
+text, count = re.subn(create_feed_pattern, create_feed_custom, text, count=1, flags=re.DOTALL)
+if count != 1:
+    raise SystemExit("Não foi possível substituir a inicialização de feeds do create-account.")
+create_account.write_text(text)
 
 # Keep only the supported upstream trending behavior and our 10-topic limit.
 trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
