@@ -312,7 +312,13 @@ async function seed(){
     for(const p of data.posts??[]){
       fetched++
       if(!p.record||!p.author?.did||!p.uri||!p.cid){rejected++;continue}
-      const reason=cheapFilter(p.record)
+      // A consulta já usa lang=pt-br. Alguns resultados do índice não trazem
+      // o campo langs no registro bruto; nesse caso, confiamos no filtro de idioma
+      // do AppView para o seed, mas continuamos rejeitando explicitamente outros idiomas.
+      const seedRecord = p.record.langs && Array.isArray(p.record.langs) && p.record.langs.length
+        ? p.record
+        : {...p.record, langs:['pt-br']}
+      const reason=cheapFilter(seedRecord)
       if(reason){rejected++;rejectReasons[reason]=(rejectReasons[reason]??0)+1;continue}
       const t=topic(p.record)
       const result=ins.run({uri:p.uri,cid:p.cid,authorDid:p.author.did,createdAt:new Date(p.record.createdAt).toISOString(),topic:t.name,topicScore:t.score,text:String(p.record.text??''),recordJson:JSON.stringify(p.record),insertedAt:new Date().toISOString()})
