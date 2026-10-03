@@ -60,13 +60,8 @@ cd "${APP_DIR}"
 echo "==> Instalando dependências"
 pnpm install --frozen-lockfile
 
-echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
-"${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
-
-echo "==> Gerando Web build"
-pnpm build-web
-mkdir -p dist/static
-ln -sfn ../_expo dist/static/_expo
+echo "==> Gerando Web build versionado"
+"${ROOT_DIR}/scripts/build-web.sh"
 
 echo "==> Instalando servidor estático"
 ${SUDO} npm install --global serve
