@@ -69,10 +69,4 @@ for old, new in replacements.items():
 path.write_text(text)
 PY
 
-# O build-web atual gera dist/_expo, enquanto o index.html referencia
-# /static/_expo. O servidor SPA retorna index.html para o caminho ausente.
-# Este symlink mantém o layout esperado sem tocar no Mastodon.
-mkdir -p dist/static
-ln -sfn ../_expo dist/static/_expo
-
-echo "==> Customizações aplicadas."
+echo "==> Customizações de código/configuração aplicadas."
