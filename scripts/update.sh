@@ -2,7 +2,16 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-source "${ROOT_DIR}/config.env"
+CONFIG_FILE="${ROOT_DIR}/config.env"
+
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+  echo "config.env não existe: ${CONFIG_FILE}"
+  exit 1
+fi
+
+set -a
+source "${CONFIG_FILE}"
+set +a
 
 echo "==> Atualizando PDS source"
 if [[ -d "${INSTALL_DIR}/pds-src/.git" ]]; then
