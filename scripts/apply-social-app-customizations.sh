@@ -87,6 +87,26 @@ PY
 python3 - <<'PY'
 from pathlib import Path
 
+# Make the hosting-provider name match the Espelunca-branded PDS in the signup UI.
+python3 <<'PY'
+from pathlib import Path
+
+path = Path("src/lib/strings/url-helpers.ts")
+text = path.read_text()
+
+old = """  if (\`https://\${urlp.host}\` === BSKY_SERVICE) {
+      return 'Bluesky Social'
+    }"""
+new = """  if (\`https://\${urlp.host}\` === BSKY_SERVICE) {
+      return urlp.host === 'espelunca.blue' ? 'Espelunca' : 'Bluesky Social'
+    }"""
+
+if old not in text:
+    raise SystemExit("Não foi possível localizar o nome padrão do provedor no upstream.")
+
+path.write_text(text.replace(old, new, 1))
+PY
+
 path = Path("src/state/persisted/schema.ts")
 text = path.read_text()
 
