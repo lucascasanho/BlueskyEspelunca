@@ -29,7 +29,7 @@ if [[ -f "${FEED_ENV_FILE}" ]]; then
 fi
 PUBLISHER_DID="${FEEDGEN_PUBLISHER_DID:-${EXISTING_PUBLISHER_DID}}"
 JETSTREAM="${FEEDGEN_JETSTREAM_URL:-https://jetstream.us-east.bsky.network}"
-APPVIEW="${FEEDGEN_APPVIEW_URL:-https://public.api.bsky.app}"
+APPVIEW="${FEEDGEN_APPVIEW_URL:-https://api.bsky.app}"
 
 if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
@@ -75,6 +75,7 @@ FEEDGEN_SQLITE_LOCATION=${FEED_DATA_DIR}/feed.sqlite
 FEEDGEN_MODEL_CACHE=${FEED_DATA_DIR}/hf-cache
 FEEDGEN_JETSTREAM_URL=${JETSTREAM}
 FEEDGEN_APPVIEW_URL=${APPVIEW}
+FEEDGEN_MODEL_DEVICE=${FEEDGEN_MODEL_DEVICE:-cpu}
 TOXICITY_MODEL=onnx-community/distilbert-multilingual-toxicity-classifier-ONNX
 TOXICITY_THRESHOLD=0.72
 AI_MEDIA_MODEL=onnx-community/ai-image-detect-distilled-ONNX
