@@ -483,6 +483,52 @@ if count != 1:
     raise SystemExit("Não foi possível substituir a inicialização de feeds do create-account.")
 create_account.write_text(text)
 
+# The shared HomeHeader is the final common rendering point for both
+# Home implementations. Canonicalize the tab order here as well, translating
+# indexes back to the underlying Pager order so tab presses remain correct.
+home_header = Path("src/view/com/home/HomeHeader.tsx")
+text = home_header.read_text()
+text = text.replace(
+    """import {TIMELINE_SAVED_FEED} from '#/lib/constants'""",
+    """import {
+  DISCOVER_FEED_URI,
+  ESPELUNCA_BR_FEED_URI,
+  TIMELINE_SAVED_FEED,
+} from '#/lib/constants'""",
+    1,
+)
+header_anchor = """  const {feeds, onSelect: onSelectProp} = props
+  const {hasSession} = useSession()
+"""
+header_custom = """  const {feeds, onSelect: onSelectProp} = props
+  const {hasSession} = useSession()
+
+  const orderedFeeds = useMemo(() => {
+    const indexed = feeds.map((feed, index) => ({feed, index}))
+    const hasEspeluncaFeed = indexed.some(
+      ({feed}) => feed.uri === ESPELUNCA_BR_FEED_URI,
+    )
+    if (!hasEspeluncaFeed) {
+      return indexed
+    }
+
+    const rank = (feed: (typeof indexed)[number]['feed']) => {
+      if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
+      if (feed.uri === ESPELUNCA_BR_FEED_URI) return 1
+      if (feed.uri === DISCOVER_FEED_URI) return 2
+      return 3
+    }
+
+    return indexed.sort(
+      (a, b) => rank(a.feed) - rank(b.feed) || a.index - b.index,
+    )
+  }, [feeds])
+
+  const orderedFeedItems = orderedFeeds.map(({feed}) => feed)
+  const selectedPage = Math.max(
+    0,
+    orderedFeeds.findIndex(item => item.index === props.selectedPage),
+  )
 # Both the legacy Home and the active Following v2 Home can render the
 # Web home route. Keep their feed order identical.
 for home in [
