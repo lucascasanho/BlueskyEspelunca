@@ -5,7 +5,9 @@
   "type": "module",
   "description": "Feed Generator da Espelunca.blue com curadoria de PT-BR, temas brasileiros, filtragem de toxicidade e detecção de mídia sintética.",
   "license": "MIT",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node feed.mjs",
     "test": "node --test test.mjs",
@@ -17,5 +19,11 @@
     "@huggingface/transformers": "4.3.0",
     "better-sqlite3": "12.4.1",
     "express": "5.1.0"
+  },
+  "allowScripts": {
+    "better-sqlite3": true,
+    "core-js": true,
+    "onnxruntime-node": true,
+    "protobufjs": true
   }
 }
