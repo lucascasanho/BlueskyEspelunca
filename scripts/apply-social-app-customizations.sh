@@ -363,7 +363,45 @@ text = text.replace(
 )
 welcome_modal.write_text(text)
 
-# Trending: keep the upstream Bluesky behavior; only increase the default visible limit to 10.
+# New accounts should follow the Espelunca profile instead of the Bluesky account.
+step_finished = Path("src/screens/Onboarding/StepFinished/index.tsx")
+text = step_finished.read_text()
+text = text.replace(
+    """  BSKY_APP_ACCOUNT_DID,
+  DISCOVER_SAVED_FEED,""",
+    """  DISCOVER_SAVED_FEED,""",
+    1,
+)
+text = text.replace(
+    "import {app} from '#/lexicons'",
+    "import {app, com} from '#/lexicons'",
+    1,
+)
+old_follow = """    const followDids = [
+      BSKY_APP_ACCOUNT_DID,
+      ...(listItems?.map(i => i.subject.did) ?? []),
+    ]"""
+new_follow = """    let espeluncaDid: string | undefined
+    try {
+      const resolved = await pdsClient.call(com.atproto.identity.resolveHandle, {
+        handle: 'espelunca.blue',
+      })
+      espeluncaDid = resolved.did
+    } catch (e) {
+      logger.error('Failed to resolve the Espelunca account for onboarding follow', {
+        safeMessage: e,
+      })
+    }
+
+    const followDids = [
+      ...(espeluncaDid ? [espeluncaDid] : []),
+      ...(listItems?.map(i => i.subject.did) ?? []),
+    ]"""
+if (!text.includes(old_follow)) throw new Error("Bloco followDids não encontrado no StepFinished upstream");
+text = text.replace(old_follow, new_follow, 1)
+step_finished.write_text(text)
+
+# Keep only the supported upstream trending behavior and our 10-topic limit.
 trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
 text = trends_query.read_text()
 text = text.replace("export const DEFAULT_LIMIT = 5", "export const DEFAULT_LIMIT = 10", 1)
