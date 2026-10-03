@@ -34,20 +34,28 @@ pds = sys.argv[1]
 path = Path("src/lib/constants.ts")
 text = path.read_text()
 
+desired_service = f"export const BSKY_SERVICE = 'https://{pds}'"
+desired_did = f"export const BSKY_SERVICE_DID = 'did:web:{pds}'"
+desired_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
+
+# Keep this step idempotent: the upstream file may already contain our
+# customization from a previous build.
+if desired_service in text and desired_did in text and desired_default in text:
+    path.write_text(text)
+    raise SystemExit(0)
+
 old_service = "export const BSKY_SERVICE = 'https://bsky.social'"
 old_did = "export const BSKY_SERVICE_DID = 'did:web:bsky.social'"
-old_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
 
-if old_service not in text or old_did not in text or old_default not in text:
+if old_service not in text or old_did not in text or desired_default not in text:
     raise SystemExit("Não foi possível localizar os padrões de serviço padrão no upstream.")
 
-text = text.replace(old_service, f"export const BSKY_SERVICE = 'https://{pds}'")
-text = text.replace(old_did, f"export const BSKY_SERVICE_DID = 'did:web:{pds}'")
-text = text.replace(old_default, "export const DEFAULT_SERVICE = BSKY_SERVICE")
+text = text.replace(old_service, desired_service)
+text = text.replace(old_did, desired_did)
 
-if f"export const BSKY_SERVICE = 'https://{pds}'" not in text:
+if desired_service not in text:
     raise SystemExit("Falha ao configurar BSKY_SERVICE para o PDS da Espelunca.")
-if f"export const BSKY_SERVICE_DID = 'did:web:{pds}'" not in text:
+if desired_did not in text:
     raise SystemExit("Falha ao configurar BSKY_SERVICE_DID para o PDS da Espelunca.")
 path.write_text(text)
 PY
