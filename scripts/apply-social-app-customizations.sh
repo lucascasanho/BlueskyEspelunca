@@ -489,20 +489,20 @@ create_account.write_text(text)
 home = Path("src/view/screens/Home.tsx")
 text = home.read_text()
 text = text.replace(
-    `  DISCOVER_FEED_URI,
+    """  DISCOVER_FEED_URI,
   PROD_DEFAULT_FEED,
-  TIMELINE_SAVED_FEED,`,
-    `  DISCOVER_FEED_URI,
+  TIMELINE_SAVED_FEED,""",
+    """  DISCOVER_FEED_URI,
   ESPELUNCA_BR_FEED_URI,
   PROD_DEFAULT_FEED,
-  TIMELINE_SAVED_FEED,`,
+  TIMELINE_SAVED_FEED,""",
     1,
 )
-home_anchor = `  const allFeeds = useMemo(
+home_anchor = """  const allFeeds = useMemo(
     () => pinnedFeedInfos.map(f => f.feedDescriptor),
     [pinnedFeedInfos],
-  )`
-home_custom = `  const orderedPinnedFeedInfos = useMemo(() => {
+  )"""
+home_custom = """  const orderedPinnedFeedInfos = useMemo(() => {
     const rank = (feed: SavedFeedSourceInfo) => {
       if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
       if (feed.uri === ESPELUNCA_BR_FEED_URI) return 1
@@ -519,7 +519,7 @@ home_custom = `  const orderedPinnedFeedInfos = useMemo(() => {
   const allFeeds = useMemo(
     () => orderedPinnedFeedInfos.map(f => f.feedDescriptor),
     [orderedPinnedFeedInfos],
-  )`
+  )"""
 if home_anchor not in text:
     raise SystemExit("Não foi possível localizar a lista de feeds da Home para ordenar as abas.")
 text = text.replace(home_anchor, home_custom, 1)
