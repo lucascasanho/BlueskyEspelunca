@@ -41,11 +41,12 @@ jobs:
           tmp="$(mktemp -d)"
           git clone --depth=1 https://github.com/bluesky-social/social-app.git "$tmp/social-app"
 
-          cat > "$tmp/config.env" <<EOF
+          cat > config.env <<EOF
           APP_DIR=$tmp/social-app
           ESPELUNCA_LABELER_DID=did:plc:example
           EOF
 
+          bash scripts/apply-labeler-customizations.sh
           bash scripts/apply-labeler-customizations.sh
 
           grep -q "const ESPELUNCA_LABELER_DID = 'did:plc:example'" \
