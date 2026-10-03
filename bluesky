@@ -36,6 +36,16 @@ command="${1:-}"
 case "${command}" in
   update)
     echo "==> Atualizando o repositório BlueskyEspelunca"
+
+    # O GitHub é a fonte de verdade deste repositório. Alterações rastreadas
+    # locais são guardadas automaticamente antes do pull, sem tocar em
+    # config.env, que permanece fora do controle de versão.
+    if [[ -n "$(git -C "${ROOT_DIR}" status --porcelain --untracked-files=no)" ]]; then
+      STASH_NAME="bluesky-auto-backup-$(date +%Y%m%d-%H%M%S)"
+      echo "==> Alterações locais detectadas; criando backup: ${STASH_NAME}"
+      git -C "${ROOT_DIR}" stash push -m "${STASH_NAME}" -- .
+    fi
+
     git -C "${ROOT_DIR}" pull --ff-only
     exec "${ROOT_DIR}/scripts/update.sh"
     ;;
