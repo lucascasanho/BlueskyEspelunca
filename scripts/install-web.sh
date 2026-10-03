@@ -14,7 +14,7 @@ if ! [[ "${WEB_PORT}" =~ ^[0-9]+$ ]] || (( WEB_PORT < 1024 || WEB_PORT > 65535 )
   exit 1
 fi
 
-if ${SUDO} ss -ltnH "sport = :${WEB_PORT}" 2>/dev/null | grep -q .; then
+if [[ ! -f "/etc/systemd/system/espelunca-web.service" ]] && ${SUDO} ss -ltnH "sport = :${WEB_PORT}" 2>/dev/null | grep -q .; then
   echo "ERRO: a porta local ${WEB_PORT} já está em uso."
   ${SUDO} ss -ltnp "sport = :${WEB_PORT}" || true
   exit 1
