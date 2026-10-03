@@ -76,6 +76,15 @@ rules = [
     "    path: ^/oauth/.*",
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
+    "    path: ^/@atproto/oauth-provider/~assets/.*$",
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: {}".format(pds_host),
+    "    path: ^/@atproto/oauth-provider/~api(?:/.*)?$",
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: {}".format(pds_host),
+    "    path: ^/account(?:/.*)?$",
+    "    service: http://127.0.0.1:{}".format(pds_port),
+    "  - hostname: {}".format(pds_host),
     "    path: ^/oauth-client-metadata\\.json$",
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
@@ -101,6 +110,9 @@ echo "Rotas:"
 echo "  https://${PDS_HOSTNAME}/xrpc/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/.well-known/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/@atproto/oauth-provider/~assets/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/@atproto/oauth-provider/~api/* -> http://127.0.0.1:${PDS_PORT}"
+echo "  https://${PDS_HOSTNAME}/account/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
 echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
