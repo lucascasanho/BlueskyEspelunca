@@ -4,9 +4,9 @@ Feed Generator da Espelunca.blue para o ecossistema AT Protocol.
 
 O feed aceita somente posts marcados como `pt-BR` e que tenham sinal de relevância em pelo menos um dos temas configurados: notícias, memes brasileiros, tecnologia, Dead by Daylight, Fortnite e League of Legends.
 
-Os modelos locais são executados no runtime Node em CPU por padrão (`FEEDGEN_MODEL_DEVICE=cpu`).
+Os modelos locais são executados no runtime Node em CPU por padrão (`FEEDGEN_MODEL_DEVICE=cpu`). O feed também usa o modelo `onnx-community/xlm-roberta-base-language-detection-ONNX` para verificar o idioma do texto, com `FEEDGEN_LANGUAGE_THRESHOLD=0.70` por padrão. O metadado `langs: ["pt-BR"]` continua sendo exigido quando presente, e o detector de idioma também precisa identificar português para o post entrar no feed.
 
-Antes da publicação, ele aplica filtros baratos de idioma, conteúdo comercial/vendas, tema, domínios bloqueados, marcadores explícitos de conteúdo gerado por IA e rótulos de hate/harassment/spam/scam. Posts com links de lojas, marketplaces, plataformas de afiliados ou sinais claros de oferta/venda são descartados. Os candidatos então passam por um classificador de toxicidade executado localmente e, quando há imagem/vídeo, por um classificador local de mídia sintética.
+Antes da publicação, ele aplica filtros de idioma, conteúdo comercial/vendas, tema, domínios bloqueados, marcadores explícitos de conteúdo gerado por IA e rótulos de hate/harassment/spam/scam. Posts com links de lojas, marketplaces, plataformas de afiliados ou sinais claros de oferta/venda são descartados. Os candidatos então passam por um classificador de toxicidade executado localmente e, quando há imagem/vídeo, por um classificador local de mídia sintética.
 
 Importante: o modelo padrão de toxicidade é multilíngue e sua documentação lista 14 idiomas, sem incluir português. Portanto, ele é usado como camada adicional de segurança, não como garantia de detecção perfeita de toxicidade em PT-BR. A variável `TOXICITY_MODEL` permite substituir o modelo por outro mais adequado ao português em uma evolução posterior.
 
