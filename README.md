@@ -131,7 +131,7 @@ bluesky tunnel
 bluesky account
 ```
 
-O comando `bluesky update` primeiro executa `git pull --ff-only` neste repositório e só então executa a atualização do PDS e do Web. Se houver alterações locais no repositório, o `pull --ff-only` interrompe a operação em vez de sobrescrevê-las.
+O comando `bluesky update` faz todo o ciclo de atualização em uma única chamada: guarda automaticamente alterações rastreadas locais em um backup Git, atualiza este repositório e depois atualiza o PDS e o Web. O arquivo local `config.env` permanece fora desse backup e não é sobrescrito.
 
 ### Customizações do social-app
 
