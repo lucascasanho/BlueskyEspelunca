@@ -483,6 +483,85 @@ if count != 1:
     raise SystemExit("Não foi possível substituir a inicialização de feeds do create-account.")
 create_account.write_text(text)
 
+# The Home tab bar must use the Espelunca canonical order even if the
+# AppView returns saved-feed preferences in a different order. We preserve
+# every other pinned item after the first three positions.
+home = Path("src/view/screens/Home.tsx")
+text = home.read_text()
+text = text.replace(
+    `  DISCOVER_FEED_URI,
+  PROD_DEFAULT_FEED,
+  TIMELINE_SAVED_FEED,`,
+    `  DISCOVER_FEED_URI,
+  ESPELUNCA_BR_FEED_URI,
+  PROD_DEFAULT_FEED,
+  TIMELINE_SAVED_FEED,`,
+    1,
+)
+home_anchor = `  const allFeeds = useMemo(
+    () => pinnedFeedInfos.map(f => f.feedDescriptor),
+    [pinnedFeedInfos],
+  )`
+home_custom = `  const orderedPinnedFeedInfos = useMemo(() => {
+    const rank = (feed: SavedFeedSourceInfo) => {
+      if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
+      if (feed.uri === ESPELUNCA_BR_FEED_URI) return 1
+      if (feed.uri === DISCOVER_FEED_URI) return 2
+      return 3
+    }
+
+    return pinnedFeedInfos
+      .map((feed, index) => ({feed, index}))
+      .sort((a, b) => rank(a.feed) - rank(b.feed) || a.index - b.index)
+      .map(({feed}) => feed)
+  }, [pinnedFeedInfos])
+
+  const allFeeds = useMemo(
+    () => orderedPinnedFeedInfos.map(f => f.feedDescriptor),
+    [orderedPinnedFeedInfos],
+  )`
+if home_anchor not in text:
+    raise SystemExit("Não foi possível localizar a lista de feeds da Home para ordenar as abas.")
+text = text.replace(home_anchor, home_custom, 1)
+text = text.replace(
+    "const selectedFeedInfo = pinnedFeedInfos[selectedIndex]",
+    "const selectedFeedInfo = orderedPinnedFeedInfos[selectedIndex]",
+    1,
+)
+text = text.replace(
+    "feeds={pinnedFeedInfos}",
+    "feeds={orderedPinnedFeedInfos}",
+    1,
+)
+text = text.replace(
+    "if (pinnedFeedInfos.length ?)",
+    "if (orderedPinnedFeedInfos.length ?)",
+    1,
+)
+text = text.replace(
+    "pinnedFeedInfos.map((feedInfo, index) => {",
+    "orderedPinnedFeedInfos.map((feedInfo, index) => {",
+    1,
+)
+if "orderedPinnedFeedInfos" not in text:
+    raise SystemExit("A ordenação da Home não foi aplicada.")
+home.write_text(text)
+
+# Build-time hard checks: never ship a bundle with the official default feed
+# order or Video default accidentally restored by an upstream update.
+step_check = Path("src/screens/Onboarding/StepFinished/index.tsx").read_text()
+create_check = Path("src/state/session/create-account.ts").read_text()
+if "value: ESPELUNCA_BR_FEED_URI" not in step_check:
+    raise SystemExit("Validação falhou: StepFinished não contém o Feed Espelunca BR.")
+if "value: ESPELUNCA_BR_FEED_URI" not in create_check:
+    raise SystemExit("Validação falhou: create-account não contém o Feed Espelunca BR.")
+if "TIMELINE_SAVED_FEED" not in step_check or "DISCOVER_SAVED_FEED" not in step_check:
+    raise SystemExit("Validação falhou: StepFinished perdeu os feeds padrão esperados.")
+if re.search(r"\.\.\.VIDEO_SAVED_FEED", step_check):
+    raise SystemExit("Validação falhou: VIDEO_SAVED_FEED voltou ao conjunto padrão do onboarding.")
+if re.search(r"\.\.\.VIDEO_SAVED_FEED", create_check):
+    raise SystemExit("Validação falhou: VIDEO_SAVED_FEED voltou ao conjunto padrão do create-account.")
+
 # Keep only the supported upstream trending behavior and our 10-topic limit.
 trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")
 text = trends_query.read_text()
