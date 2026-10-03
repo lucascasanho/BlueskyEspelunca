@@ -13,7 +13,7 @@ FULL_HANDLE="${HANDLE}.${PDS_HOSTNAME}"
 
 echo "Criando conta ${FULL_HANDLE}..."
 
-docker exec -e PDS_ADMIN_PASSWORD="$(sudo cat "${PDS_DATA_DIR}/.admin-password")"   pds goat pds admin account create   --handle "${FULL_HANDLE}"   --email "${EMAIL}"   --password "${PASSWORD}"
+sudo docker exec -e PDS_ADMIN_PASSWORD="$(sudo cat "${PDS_DATA_DIR}/.admin-password")"   pds goat pds admin account create   --handle "${FULL_HANDLE}"   --email "${EMAIL}"   --password "${PASSWORD}"
 
 echo
 echo "Conta criada: @${FULL_HANDLE}"
