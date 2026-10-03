@@ -27,7 +27,7 @@ diff --git a/src/Splash.web.tsx b/src/Splash.web.tsx
 diff --git a/public/index.html b/public/index.html
 --- a/public/index.html
 +++ b/public/index.html
-@@ -195,5 +195,5 @@
+@@ -196,7 +196,7 @@
  
      <!-- The root element for your Expo app. -->
      <div id="splash">
@@ -41,7 +41,7 @@ diff --git a/public/index.html b/public/index.html
 diff --git a/bskyweb/templates/base.html b/bskyweb/templates/base.html
 --- a/bskyweb/templates/base.html
 +++ b/bskyweb/templates/base.html
-@@ -139,5 +139,5 @@
+@@ -140,7 +140,7 @@
  {%- block body_all %}
    <div id="splash">
 -    <!-- Bluesky SVG -->
