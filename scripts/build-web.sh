@@ -11,6 +11,33 @@ set +a
 cd "${APP_DIR}"
 "${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
 pnpm build-web
+
+# Apply web-only branding to the generated static shell.
+cp "${ROOT_DIR}/espelunca-icon.svg" dist/espelunca-icon.svg
+python3 - <<'PY'
+from pathlib import Path
+import re
+
+path = Path("dist/index.html")
+text = path.read_text()
+
+text = re.sub(r"<title>.*?</title>", "<title>Espelunca</title>", text, count=1, flags=re.DOTALL)
+text = re.sub(
+    r'<meta\s+name="application-name"\s+content="[^"]*"\s*/?>',
+    '<meta name="application-name" content="Espelunca">',
+    text,
+    count=1,
+)
+
+# Remove Expo's generated favicon declarations and use the fork's icon.
+text = re.sub(r'\s*<link\s+[^>]*rel="icon"[^>]*>', "", text, flags=re.IGNORECASE)
+favicon = '<link rel="icon" type="image/svg+xml" href="/espelunca-icon.svg">'
+if favicon not in text:
+    text = text.replace("</head>", f"  {favicon}\n</head>", 1)
+
+path.write_text(text)
+PY
+
 mkdir -p dist/static
 ln -sfn ../_expo dist/static/_expo
 sudo systemctl restart espelunca-bluesky-web.service
