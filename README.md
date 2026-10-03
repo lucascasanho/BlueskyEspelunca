@@ -186,7 +186,15 @@ O Feed é independente do PDS e do Web. Seu banco e cache ficam em `/opt/espelun
 
 ### Feed padrão para novas contas
 
-O Web da Espelunca adiciona automaticamente o Feed `Espelunca BR` (`espelunca-br`) aos feeds fixados quando uma nova conta conclui o onboarding. Ele é adicionado sem remover os feeds padrão existentes nem os feeds de um Starter Pack.
+O Web da Espelunca configura os feeds iniciais de novas contas com esta ordem:
+
+1. `Seguindo`
+2. `Espelunca BR`
+3. `Discover`
+
+A guia oficial `Video` não é incluída nos feeds padrão. Caso existam outros feeds fixados, eles permanecem depois desses três, na ordem original.
+
+Além de gravar essa ordem nas preferências da conta durante o onboarding, a Home do Web aplica a mesma ordenação visual para impedir que uma resposta inesperada do AppView altere a sequência exibida no topo.
 
 Essa personalização é aplicada ao fluxo de onboarding do `social-app` hospedado em `espelunca.blue`. Uma conta criada por um cliente externo, sem passar pelo Web da Espelunca, não recebe essa preferência automaticamente.
 
