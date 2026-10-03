@@ -534,7 +534,10 @@ marker="""          {exploreTopicCount > DEFAULT_LIMIT ? (
 replacement="""          <Link
             label={showGlobal ? l__BT__View Brazilian trending__BT__ : l__BT__View global trending__BT__}
             to="#"
-            onPress={() => setShowGlobal(value => !value)}>
+            onPress={() => {
+              setShowGlobal(value => !value)
+              return false
+            }}>
             {({hovered, pressed}) => (
               <Text
                 style={[
