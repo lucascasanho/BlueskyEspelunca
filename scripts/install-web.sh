@@ -65,7 +65,8 @@ echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
 
 echo "==> Gerando Web build"
 pnpm build-web
-"${ROOT_DIR}/scripts/apply-social-app-customizations.sh"
+mkdir -p dist/static
+ln -sfn ../_expo dist/static/_expo
 
 echo "==> Instalando servidor estático"
 ${SUDO} npm install --global serve
