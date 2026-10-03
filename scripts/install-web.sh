@@ -78,6 +78,9 @@ PY
 echo "==> Gerando Web build"
 pnpm build-web
 
+echo "==> Instalando servidor estático"
+npm install --global serve
+
 echo "==> Criando serviço Web"
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-web.service >/dev/null
@@ -90,7 +93,7 @@ Type=simple
 User=$(id -un)
 WorkingDirectory=${APP_DIR}
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/pnpx serve -s dist -l ${WEB_PORT}
+ExecStart=/usr/bin/serve -s dist -l ${WEB_PORT}
 Restart=always
 RestartSec=3
 
