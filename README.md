@@ -168,6 +168,12 @@ bluesky feed tunnel
 
 O Feed é independente do PDS e do Web. Seu banco e cache ficam em `/opt/espelunca-bluesky/feed-data`.
 
+### Feed padrão para novas contas
+
+O Web da Espelunca adiciona automaticamente o Feed `Espelunca BR` (`espelunca-br`) aos feeds fixados quando uma nova conta conclui o onboarding. Ele é adicionado sem remover os feeds padrão existentes nem os feeds de um Starter Pack.
+
+Essa personalização é aplicada ao fluxo de onboarding do `social-app` hospedado em `espelunca.blue`. Uma conta criada por um cliente externo, sem passar pelo Web da Espelunca, não recebe essa preferência automaticamente.
+
 A lista de paywalls é uma lista configurada de domínios conhecidos, não uma detecção universal de paywalls. A detecção de IA é probabilística. O modelo padrão de toxicidade é multilíngue e não inclui português em sua lista declarada de idiomas; por isso, essa camada não deve ser tratada como moderação perfeita para PT-BR.
 
 ## Créditos adicionais do Feed
