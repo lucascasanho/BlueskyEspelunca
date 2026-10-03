@@ -120,6 +120,11 @@ PDS_CRAWLERS=https://bsky.network
 LOG_ENABLED=true
 PDS_RATE_LIMITS_ENABLED=true
 PDS_INVITE_REQUIRED=true
+PDS_SERVICE_NAME=Espelunca
+PDS_HOME_URL=https://espelunca.blue
+PDS_LOGO_URL=https://espelunca.blue/espelunca-icon.svg
+PDS_PRIMARY_COLOR=#006AFF
+PDS_EMAIL_DISABLE_CONFIRMATION_LINK=true
 EOF
 
 # SMTP é opcional para o processo iniciar, mas é necessário para envio de e-mails.
