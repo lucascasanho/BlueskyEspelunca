@@ -61,8 +61,12 @@ if ! ${SUDO} docker info >/dev/null 2>&1; then
 fi
 
 echo "==> Criando diretórios"
-${SUDO} mkdir -p "${INSTALL_DIR}" "${PDS_DATA_DIR}"
+${SUDO} mkdir -p "${INSTALL_DIR}" "${PDS_DATA_DIR}" "${INSTALL_DIR}/pds-src"
 ${SUDO} chmod 700 "${PDS_DATA_DIR}"
+
+# O código-fonte é baixado pelo usuário que executa o instalador.
+# Os dados e a configuração do PDS continuam protegidos pelo root.
+${SUDO} chown "$(id -u):$(id -g)" "${INSTALL_DIR}/pds-src"
 
 if [[ ! -d "${INSTALL_DIR}/pds-src/.git" ]]; then
   echo "==> Baixando PDS oficial"
@@ -104,8 +108,8 @@ PDS_HOSTNAME=${PDS_HOSTNAME}
 PDS_JWT_SECRET=${JWT_SECRET}
 PDS_ADMIN_PASSWORD=${PDS_ADMIN_PASSWORD}
 PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX=${PLC_KEY}
-PDS_DATA_DIRECTORY=${PDS_DATA_DIR}
-PDS_BLOBSTORE_DISK_LOCATION=${PDS_DATA_DIR}/blocks
+PDS_DATA_DIRECTORY=/pds
+PDS_BLOBSTORE_DISK_LOCATION=/pds/blocks
 PDS_BLOB_UPLOAD_LIMIT=314572800
 PDS_DID_PLC_URL=https://plc.directory
 PDS_BSKY_APP_VIEW_URL=https://api.bsky.app
@@ -119,11 +123,11 @@ PDS_INVITE_REQUIRED=true
 EOF
 
 # SMTP é opcional para o processo iniciar, mas é necessário para envio de e-mails.
-if [[ -n "\${PDS_EMAIL_SMTP_URL:-}" ]]; then
-  printf '%s\n' "PDS_EMAIL_SMTP_URL=\${PDS_EMAIL_SMTP_URL}" | \${SUDO} tee -a "\${PDS_DATA_DIR}/pds.env" >/dev/null
+if [[ -n "${PDS_EMAIL_SMTP_URL:-}" ]]; then
+  printf '%s\n' "PDS_EMAIL_SMTP_URL=${PDS_EMAIL_SMTP_URL}" | ${SUDO} tee -a "${PDS_DATA_DIR}/pds.env" >/dev/null
 fi
-if [[ -n "\${PDS_EMAIL_FROM_ADDRESS:-}" ]]; then
-  printf '%s\n' "PDS_EMAIL_FROM_ADDRESS=\${PDS_EMAIL_FROM_ADDRESS}" | \${SUDO} tee -a "\${PDS_DATA_DIR}/pds.env" >/dev/null
+if [[ -n "${PDS_EMAIL_FROM_ADDRESS:-}" ]]; then
+  printf '%s\n' "PDS_EMAIL_FROM_ADDRESS=${PDS_EMAIL_FROM_ADDRESS}" | ${SUDO} tee -a "${PDS_DATA_DIR}/pds.env" >/dev/null
 fi
 
 ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
