@@ -380,9 +380,12 @@ step_finished = Path("src/screens/Onboarding/StepFinished/index.tsx")
 text = step_finished.read_text()
 text = text.replace(
     """  BSKY_APP_ACCOUNT_DID,
-  DISCOVER_SAVED_FEED,""",
+  DISCOVER_SAVED_FEED,
+  TIMELINE_SAVED_FEED,
+  VIDEO_SAVED_FEED,""",
     """  ESPELUNCA_BR_FEED_URI,
-  DISCOVER_SAVED_FEED,""",
+  DISCOVER_SAVED_FEED,
+  TIMELINE_SAVED_FEED,""",
     1,
 )
 text = text.replace(
@@ -426,6 +429,10 @@ feeds_anchor = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] =
               id: TID.nextStr(),
             },"""
 feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
+            {
+              ...TIMELINE_SAVED_FEED,
+              id: TID.nextStr(),
+            },
             {
               type: 'feed',
               value: ESPELUNCA_BR_FEED_URI,
