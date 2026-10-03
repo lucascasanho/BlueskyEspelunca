@@ -1,0 +1,23 @@
+[Unit]
+Description=Espelunca.blue Feed Generator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=espelunca
+Group=espelunca
+WorkingDirectory=/opt/espelunca-bluesky/feed-generator
+EnvironmentFile=-/opt/espelunca-bluesky/feed.env
+ExecStart=/usr/bin/node /opt/espelunca-bluesky/feed-generator/feed.mjs
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/espelunca-bluesky/feed-data
+
+[Install]
+WantedBy=multi-user.target

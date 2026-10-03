@@ -14,6 +14,7 @@ Uso:
   bluesky stop
   bluesky tunnel
   bluesky account
+  bluesky feed <comando>
 
 Comandos:
   update   Atualiza este repositório e aplica a atualização do BlueskyEspelunca.
@@ -23,6 +24,17 @@ Comandos:
   stop     Para o Web.
   tunnel   Configura/valida o Cloudflare Tunnel existente.
   account  Cria uma conta no PDS.
+
+Feed Espelunca BR:
+  feed install    Instala/atualiza o Feed Generator.
+  feed start      Inicia o serviço do Feed.
+  feed stop       Para o serviço do Feed.
+  feed restart    Reinicia o serviço do Feed.
+  feed status     Mostra estado e fila.
+  feed logs       Mostra logs.
+  feed publish    Publica o registro do Feed no Bluesky.
+  feed seed       Preenche a fila com posts recentes.
+  feed tunnel     Configura a rota do Feed no Cloudflare Tunnel.
 EOF
 }
 
@@ -66,6 +78,9 @@ case "${command}" in
     ;;
   account)
     exec "${ROOT_DIR}/scripts/create-account.sh"
+    ;;
+  feed)
+    exec "${ROOT_DIR}/scripts/feed.sh" "${@:2}"
     ;;
   ""|-h|--help|help)
     usage
