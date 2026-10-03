@@ -27,12 +27,12 @@ fi
 BACKUP="${CLOUDFLARED_CONFIG}.bak.$(date +%Y%m%d-%H%M%S)"
 ${SUDO} cp "${CLOUDFLARED_CONFIG}" "${BACKUP}"
 
-python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
+python3 - "${CLOUDFLARED_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" "${OZONE_TUNNEL_ENABLED:-false}" "${OZONE_HOSTNAME:-}" "${OZONE_PORT:-3300}" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-pds_host, pds_port, web_port = sys.argv[2:]
+pds_host, pds_port, web_port, ozone_enabled, ozone_host, ozone_port = sys.argv[2:]
 text = path.read_text()
 
 if "ingress:" not in text:
@@ -42,7 +42,7 @@ lines = text.splitlines()
 start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
-managed = {pds_host, "*." + pds_host}
+managed = {pds_host, "*." + pds_host}\nif ozone_enabled == "true" and ozone_host:\n    managed.add(ozone_host)
 filtered = []
 i = 0
 
@@ -103,6 +103,6 @@ echo "  https://${PDS_HOSTNAME}/.well-known/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
-echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
+if [[ "${OZONE_TUNNEL_ENABLED:-false}" == "true" ]]; then\n  echo "  https://${OZONE_HOSTNAME}/* -> http://127.0.0.1:${OZONE_PORT}"\nfi\necho "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
 echo
 echo "Os registros DNS precisam existir no Cloudflare."
