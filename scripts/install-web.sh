@@ -103,8 +103,6 @@ fi
 
 APP_USER="${SUDO_USER:-$(id -un)}"
 
-echo "==> Criando serviço Web"
-
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-web.service >/dev/null
 [Unit]
 Description=Espelunca Bluesky Web
