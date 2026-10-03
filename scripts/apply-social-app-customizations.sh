@@ -308,7 +308,7 @@ text = text.replace("const height = width * (67 / 64)", "const height = width", 
 splash.write_text(text)
 replace_path_d(
     splash,
-    r"(<Path\s*\n\s*fill=\{props\.fill \|\| '#fff'\}\s*\n\s*d=")([^"]+)(")",
+    r"""(<Path\s*\n\s*fill=\{props\.fill \|\| '#fff'\}\s*\n\s*d=")([^"]+)(")""",
     "o desenho do logo do splash",
 )
 
