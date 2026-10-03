@@ -39,6 +39,7 @@ text = constants.read_text()
 desired_service = "export const BSKY_SERVICE = 'https://" + pds + "'"
 desired_did = "export const BSKY_SERVICE_DID = 'did:web:" + pds + "'"
 desired_default = "export const DEFAULT_SERVICE = BSKY_SERVICE"
+desired_feed_uri = "export const ESPELUNCA_BR_FEED_URI = 'at://did:plc:kafjdndx54b3wdlu6cbiwk42/app.bsky.feed.generator/espelunca-br'"
 
 text = re.sub(
     r"export const BSKY_SERVICE = '[^']+'",
@@ -58,8 +59,13 @@ text = re.sub(
     text,
     count=1,
 )
-if desired_service not in text or desired_did not in text or desired_default not in text:
-    raise SystemExit("Falha ao configurar o PDS da Espelunca.")
+if (
+    desired_service not in text
+    or desired_did not in text
+    or desired_default not in text
+    or desired_feed_uri not in text
+):
+    raise SystemExit("Falha ao configurar o PDS/feed da Espelunca.")
 constants.write_text(text)
 
 # Application identity and supported deep-link domains.
@@ -369,7 +375,8 @@ text = step_finished.read_text()
 text = text.replace(
     """  BSKY_APP_ACCOUNT_DID,
   DISCOVER_SAVED_FEED,""",
-    """  DISCOVER_SAVED_FEED,""",
+    """  ESPELUNCA_BR_FEED_URI,
+  DISCOVER_SAVED_FEED,""",
     1,
 )
 text = text.replace(
@@ -400,6 +407,33 @@ new_follow = """    let espeluncaDid: string | undefined
 if old_follow not in text:
     raise SystemExit("Bloco followDids não encontrado no StepFinished upstream")
 text = text.replace(old_follow, new_follow, 1)
+# Pin the Espelunca BR feed for every account completing onboarding on this branded app.
+# The URI belongs to the public Feed Generator and is saved alongside the normal
+# Bluesky defaults. Re-running this script must not create duplicate entries.
+feed_import_anchor = """  ESPELUNCA_BR_FEED_URI,
+  DISCOVER_SAVED_FEED,"""
+if feed_import_anchor not in text:
+    raise SystemExit("Não foi possível localizar a importação do feed Espelunca.")
+feeds_anchor = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
+            {
+              ...DISCOVER_SAVED_FEED,
+              id: TID.nextStr(),
+            },"""
+feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
+            {
+              type: 'feed',
+              value: ESPELUNCA_BR_FEED_URI,
+              pinned: true,
+              id: TID.nextStr(),
+            },
+            {
+              ...DISCOVER_SAVED_FEED,
+              id: TID.nextStr(),
+            },"""
+if feeds_anchor in text:
+    text = text.replace(feeds_anchor, feed_custom, 1)
+elif feed_custom not in text:
+    raise SystemExit("Não foi possível localizar a lista de feeds padrão no StepFinished.")
 step_finished.write_text(text)
 
 # Keep only the supported upstream trending behavior and our 10-topic limit.
