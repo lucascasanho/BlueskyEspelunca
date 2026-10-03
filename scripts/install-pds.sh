@@ -5,6 +5,7 @@ set -Eeuo pipefail
 : "${PDS_ADMIN_EMAIL:?PDS_ADMIN_EMAIL não definido}"
 : "${INSTALL_DIR:?INSTALL_DIR não definido}"
 : "${PDS_DATA_DIR:?PDS_DATA_DIR não definido}"
+: "${PDS_PORT:?PDS_PORT não definido}"
 
 if [[ "$(id -u)" -ne 0 ]]; then
   SUDO=sudo
@@ -14,6 +15,17 @@ fi
 
 if ! grep -qiE '(microsoft|wsl)' /proc/version 2>/dev/null; then
   echo "Aviso: este script foi projetado para WSL2, mas continuará em Linux."
+fi
+
+if ! [[ "${PDS_PORT}" =~ ^[0-9]+$ ]] || (( PDS_PORT < 1024 || PDS_PORT > 65535 )); then
+  echo "PDS_PORT inválida: ${PDS_PORT}"
+  exit 1
+fi
+
+if ${SUDO} ss -ltnH "sport = :${PDS_PORT}" 2>/dev/null | grep -q .; then
+  echo "ERRO: a porta local ${PDS_PORT} já está em uso."
+  ${SUDO} ss -ltnp "sport = :${PDS_PORT}" || true
+  exit 1
 fi
 
 echo "==> Instalando dependências básicas"
@@ -28,7 +40,7 @@ if ! command -v docker >/dev/null 2>&1; then
 
   echo "==> Instalando Docker Engine"
   ${SUDO} install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/$(. /etc/os-release && echo "$ID")/gpg |
+  curl -fsSL "https://download.docker.com/linux/$(. /etc/os-release && echo "$ID")/gpg" |
     ${SUDO} gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
 
   ${SUDO} chmod a+r /etc/apt/keyrings/docker.gpg
@@ -41,16 +53,15 @@ if ! command -v docker >/dev/null 2>&1; then
   ${SUDO} apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 fi
 
-if ! docker info >/dev/null 2>&1; then
+if ! ${SUDO} docker info >/dev/null 2>&1; then
   if command -v systemctl >/dev/null 2>&1; then
     ${SUDO} systemctl enable --now docker || true
   fi
 fi
 
-if ! docker info >/dev/null 2>&1; then
+if ! ${SUDO} docker info >/dev/null 2>&1; then
   echo "Docker está instalado, mas o daemon não está acessível."
   echo "No WSL2 com systemd, verifique: sudo systemctl status docker"
-  echo "Depois execute novamente: ./install.sh"
   exit 1
 fi
 
@@ -62,7 +73,7 @@ if [[ ! -d "${INSTALL_DIR}/pds-src/.git" ]]; then
   echo "==> Baixando PDS oficial"
   git clone https://github.com/bluesky-social/pds.git "${INSTALL_DIR}/pds-src"
 else
-  echo "==> PDS oficial já existe; atualizando"
+  echo "==> Atualizando PDS oficial"
   git -C "${INSTALL_DIR}/pds-src" fetch --tags --prune
   git -C "${INSTALL_DIR}/pds-src" pull --ff-only
 fi
@@ -94,9 +105,8 @@ PDS_ADMIN_PASSWORD="$(${SUDO} cat "${PDS_ADMIN_PASSWORD_FILE}")"
 JWT_SECRET="$(${SUDO} cat "${JWT_SECRET_FILE}")"
 PLC_KEY="$(${SUDO} cat "${PLC_KEY_FILE}")"
 
-${SUDO} mkdir -p "${PDS_DATA_DIR}/caddy/data" "${PDS_DATA_DIR}/caddy/etc/caddy"
-
 cat <<EOF | ${SUDO} tee "${PDS_DATA_DIR}/pds.env" >/dev/null
+PDS_PORT=${PDS_PORT}
 PDS_HOSTNAME=${PDS_HOSTNAME}
 PDS_JWT_SECRET=${JWT_SECRET}
 PDS_ADMIN_PASSWORD=${PDS_ADMIN_PASSWORD}
@@ -117,24 +127,35 @@ EOF
 
 ${SUDO} chmod 600 "${PDS_DATA_DIR}/pds.env"
 
-curl -fsSL https://raw.githubusercontent.com/bluesky-social/pds/main/compose.yaml |
-  sed "s|/pds|${PDS_DATA_DIR}|g" |
-  ${SUDO} tee "${PDS_DATA_DIR}/compose.yaml" >/dev/null
+# A imagem oficial do PDS escuta em PDS_PORT. Mantemos network_mode=host
+# para que o serviço possa ser alcançado pelo Cloudflare Tunnel no WSL,
+# mas usamos uma porta dedicada para não tocar no Mastodon (80/3001).
+cat <<EOF | ${SUDO} tee "${PDS_DATA_DIR}/compose.yaml" >/dev/null
+services:
+  pds:
+    container_name: pds
+    image: ghcr.io/bluesky-social/pds:0.4
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${PDS_DATA_DIR}
+        target: /pds
+    env_file:
+      - ${PDS_DATA_DIR}/pds.env
 
-cat <<EOF | ${SUDO} tee "${PDS_DATA_DIR}/caddy/etc/caddy/Caddyfile" >/dev/null
-{
-  email ${PDS_ADMIN_EMAIL}
-  on_demand_tls {
-    ask http://localhost:3000/tls-check
-  }
-}
-
-${PDS_HOSTNAME}, *.${PDS_HOSTNAME} {
-  tls {
-    on_demand
-  }
-  reverse_proxy http://localhost:3000
-}
+  watchtower:
+    container_name: espelunca-pds-watchtower
+    image: ghcr.io/nicholas-fedor/watchtower:latest
+    network_mode: host
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_SCHEDULE: "@midnight"
 EOF
 
 cat <<EOF | ${SUDO} tee /etc/systemd/system/espelunca-pds.service >/dev/null
@@ -156,16 +177,21 @@ EOF
 
 ${SUDO} systemctl daemon-reload
 ${SUDO} systemctl enable espelunca-pds
+
+echo "==> Baixando a imagem oficial do PDS"
+${SUDO} docker compose --file "${PDS_DATA_DIR}/compose.yaml" pull pds
+
+echo "==> Iniciando PDS"
 ${SUDO} systemctl restart espelunca-pds
 
 echo
 echo "==> PDS iniciado"
 echo "Dados: ${PDS_DATA_DIR}"
+echo "Porta local: ${PDS_PORT}"
 echo "Admin password armazenada em: ${PDS_ADMIN_PASSWORD_FILE}"
-echo "Não publique esse arquivo."
 echo
-
-if [[ "${CREATE_INITIAL_ACCOUNT:-false}" == "true" ]]; then
-  echo "Criação automática da conta inicial foi solicitada."
-  echo "Por segurança, a criação será feita manualmente com pdsadmin após validar DNS/TLS."
-fi
+echo "Teste local:"
+echo "  curl http://127.0.0.1:${PDS_PORT}/xrpc/_health"
+echo
+echo "Cloudflare Tunnel:"
+echo "  ${PDS_HOSTNAME} e *.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
