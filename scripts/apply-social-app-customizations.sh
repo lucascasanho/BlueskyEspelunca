@@ -59,6 +59,12 @@ text = re.sub(
     text,
     count=1,
 )
+if desired_feed_uri not in text:
+    text = text.replace(
+        desired_default,
+        desired_default + "\\n" + desired_feed_uri,
+        1,
+    )
 if (
     desired_service not in text
     or desired_did not in text
