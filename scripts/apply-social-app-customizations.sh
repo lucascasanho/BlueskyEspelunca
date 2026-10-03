@@ -461,7 +461,10 @@ marker="""          <ModuleHeader.EllipsisButton
 replacement="""          <Link
             label={showGlobal ? l__BT__View Brazilian trending__BT__ : l__BT__View global trending__BT__}
             to="#"
-            onPress={() => setShowGlobal(value => !value)}>
+            onPress={() => {
+              setShowGlobal(value => !value)
+              return false
+            }}>
             {({hovered, pressed}) => (
               <Text
                 style={[
@@ -488,6 +491,7 @@ explore.write_text(text)
 sidebar = Path("src/view/shell/desktop/SidebarTrendingTopics.tsx")
 text = sidebar.read_text()
 text = text.replace("import {View} from 'react-native'", "import {useState} from 'react'\nimport {View} from 'react-native'", 1)
+text = text.replace("import {Link} from '#/components/Link'\n", "", 1)
 text = text.replace(
     """  const exploreTopicCount = ax.features.getValue(
     ax.features.TrendingExploreTopicsCountValue,
