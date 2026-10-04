@@ -294,3 +294,15 @@ Commit deste checkpoint: será registrado no commit desta atualização do `prog
 - [x] Comprovados uploads externos reais de aproximadamente 165,8 MB e 248,0 MB pelo Tailscale Funnel.
 - [ ] Ainda falta provar o fluxo oficial de vídeo do Bluesky usando a rota alternativa.
 - [ ] Ainda não implementar a regra por tamanho em produção.
+
+
+### Etapa PWA iOS — 2026-10-04
+- [x] Investigado o problema de escala/overflow no PWA do iOS; o HTML upstream já possui viewport adequado (width=device-width, initial-scale=1, viewport-fit=cover), portanto a correção não foi baseada apenas em adicionar a meta viewport.
+- [x] scripts/build-web.sh passou a reforçar a meta viewport no HTML final gerado, preservando a configuração correta mesmo se o template do Expo mudar.
+- [x] Adicionada normalização específica para PWA standalone em WebKit: html, body e #root usam box-sizing: border-box, largura máxima de 100%, min-width: 0 e overflow-x: hidden.
+- [x] O overflow-y: scroll forçado pelo shell upstream é substituído por overflow-y: auto somente nesse cenário, evitando a barra/artefato lateral desnecessário do layout desktop no iPhone.
+- [ ] Validar visualmente no PWA instalado em um iPhone, em retrato e paisagem, confirmando ausência de zoom aparente e de rolagem horizontal.
+
+#### Commits
+- 4601df99cf8ddc5dc5fac98f8a80d58856a52538 — primeira gravação da correção do PWA iOS; continha um erro no comentário do bloco Python e foi corrigida antes do uso.
+- 2496336657fc49c0bb2f94e4b1ce4dcc569a825a — versão corrigida e final da alteração.
