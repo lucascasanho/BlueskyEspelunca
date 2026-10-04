@@ -25,7 +25,7 @@ Comandos:
   tunnel   Configura/valida o Cloudflare Tunnel existente.
   account  Cria uma conta no PDS.
 
-Feed Espelunca BR:
+Feed Espelunca:
   feed install    Instala/atualiza o Feed Generator.
   feed start      Inicia o serviço do Feed.
   feed stop       Para o serviço do Feed.
