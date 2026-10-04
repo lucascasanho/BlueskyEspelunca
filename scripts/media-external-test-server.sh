@@ -15,8 +15,24 @@ set +a
 
 TEST_PORT="${MEDIA_TEST_PORT:-3191}"
 FUNNEL_PORT="${MEDIA_TEST_FUNNEL_PORT:-8443}"
-SIZE_MB="${1:-101}"
-EXPECTED="$((SIZE_MB * 1000 * 1000))"
+SIZE_ARG="${1:-101}"
+MIN_MB="${2:-100}"
+
+if [[ "$SIZE_ARG" == "auto" ]]; then
+  if ! [[ "$MIN_MB" =~ ^[0-9]+$ ]] || (( MIN_MB < 1 )); then
+    echo "Mínimo inválido: ${MIN_MB} MB"
+    exit 1
+  fi
+  EXPECTED=0
+  MIN_BYTES="$((MIN_MB * 1000 * 1000))"
+else
+  if ! [[ "$SIZE_ARG" =~ ^[0-9]+$ ]] || (( SIZE_ARG < 1 )); then
+    echo "Tamanho inválido: ${SIZE_ARG} MB"
+    exit 1
+  fi
+  EXPECTED="$((SIZE_ARG * 1000 * 1000))"
+  MIN_BYTES="${EXPECTED}"
+fi
 
 if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
@@ -26,11 +42,6 @@ for cmd in tailscale jq python3 curl ss; do
     exit 1
   fi
 done
-
-if ! [[ "${SIZE_MB}" =~ ^[0-9]+$ ]] || (( SIZE_MB < 1 )); then
-  echo "Tamanho inválido: ${SIZE_MB} MB"
-  exit 1
-fi
 
 DNS_NAME="$("${SUDO}" tailscale status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
 if [[ -z "${DNS_NAME}" ]]; then
@@ -59,15 +70,26 @@ import os
 
 port = int(os.environ["TEST_PORT"])
 expected = int(os.environ["EXPECTED"])
+minimum_bytes = int(os.environ["MIN_BYTES"])
 result_path = os.environ["RESULT_PATH"]
 server_log = os.environ["SERVER_LOG"]
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def handle_expect_100(self):
+        self.send_response_only(100)
+        self.end_headers()
+        return True
     def do_GET(self):
+        if expected:
+            target = f"Expected upload: {expected} bytes\\n"
+        else:
+            target = f"Expected minimum upload: {minimum_bytes} bytes\\n"
         body = (
-            "Espelunca media transport test\n\n"
-            f"Expected upload: {expected} bytes\n"
-            "Use POST /upload-test from a DIFFERENT Internet connection.\n"
+            "Espelunca media transport test\\n\\n"
+            + target
+            + "Use POST /upload-test from a DIFFERENT Internet connection.\\n"
         ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -81,22 +103,60 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         length = self.headers.get("Content-Length")
-        if length is None:
+        transfer_encoding = (self.headers.get("Transfer-Encoding") or "").lower()
+        expect_header = self.headers.get("Expect") or ""
+
+        received = 0
+        if "chunked" in transfer_encoding:
+            while True:
+                line = self.rfile.readline()
+                if not line:
+                    break
+                size_text = line.strip().split(b";", 1)[0]
+                try:
+                    chunk_size = int(size_text, 16)
+                except ValueError:
+                    chunk_size = 0
+                if chunk_size == 0:
+                    while True:
+                        trailer = self.rfile.readline()
+                        if not trailer or trailer in (b"\r\n", b"\n"):
+                            break
+                    break
+                remaining = chunk_size
+                while remaining:
+                    chunk = self.rfile.read(min(4 * 1024 * 1024, remaining))
+                    if not chunk:
+                        remaining = 0
+                        break
+                    received += len(chunk)
+                    remaining -= len(chunk)
+                self.rfile.read(2)
+            content_length = int(length) if length is not None else received
+        elif length is not None:
+            content_length = int(length)
+            while received < content_length:
+                chunk = self.rfile.read(min(4 * 1024 * 1024, content_length - received))
+                if not chunk:
+                    break
+                received += len(chunk)
+        else:
             self.send_response(411)
             self.end_headers()
             return
-        content_length = int(length)
-        received = 0
-        while received < content_length:
-            chunk = self.rfile.read(min(4 * 1024 * 1024, content_length - received))
-            if not chunk:
-                break
-            received += len(chunk)
+
+        size_ok = received == content_length and received >= minimum_bytes
+        if expected:
+            size_ok = size_ok and received == expected == content_length
+
         payload = {
             "received": received,
             "content_length": content_length,
             "expected": expected,
-            "ok": received == expected == content_length,
+            "minimum_bytes": minimum_bytes,
+            "transfer_encoding": transfer_encoding,
+            "expect": expect_header,
+            "ok": size_ok,
         }
         with open(result_path, "w", encoding="utf-8") as fp:
             json.dump(payload, fp)
@@ -114,7 +174,7 @@ class Handler(BaseHTTPRequestHandler):
 HTTPServer(("127.0.0.1", port), Handler).serve_forever()
 PY
 
-export TEST_PORT EXPECTED RESULT_PATH="${RESULT}" SERVER_LOG="${LOG}"
+export TEST_PORT EXPECTED MIN_BYTES="${MIN_BYTES}" RESULT_PATH="${RESULT}" SERVER_LOG="${LOG}"
 python3 "${SERVER_SCRIPT}" >/dev/null 2>&1 &
 SERVER_PID="$!"
 
@@ -135,7 +195,12 @@ URL="https://${DNS_NAME}:${FUNNEL_PORT}/upload-test"
 echo
 echo "TESTE EXTERNO — execute o upload a partir de OUTRA máquina/rede."
 echo
-echo "Tamanho esperado: ${EXPECTED} bytes (${SIZE_MB} MB)"
+if [[ "$SIZE_ARG" == "auto" ]]; then
+  echo "Modo: tamanho automático"
+  echo "Mínimo esperado: ${MIN_BYTES} bytes (${MIN_MB} MB)"
+else
+  echo "Tamanho esperado: ${EXPECTED} bytes (${SIZE_ARG} MB)"
+fi
 echo "URL: ${URL}"
 echo
 echo "Exemplo em outro computador:"
@@ -158,7 +223,12 @@ while true; do
       echo "Content-Length:   ${CONTENT_LENGTH}"
       break
     fi
-    echo "Upload recebido com tamanho incorreto: ${RECEIVED}/${EXPECTED} bytes."
+    echo "Upload recebido com tamanho incorreto: ${RECEIVED}/${CONTENT_LENGTH} bytes no Content-Length."
+    if [[ "$SIZE_ARG" == "auto" ]]; then
+      echo "Mínimo configurado: ${MIN_BYTES} bytes."
+    else
+      echo "Esperado exatamente: ${EXPECTED} bytes."
+    fi
     exit 1
   fi
   sleep 1
