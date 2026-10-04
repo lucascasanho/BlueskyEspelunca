@@ -246,3 +246,41 @@ Commit da correção:
 - [x] Comprovado o caminho Internet móvel → Tailscale Funnel → servidor doméstico para upload acima de 100 MB.
 - [ ] Ainda falta testar ~248 MB e, principalmente, provar o fluxo oficial `video.bsky.app → PDS`.
 - [ ] Nenhuma alteração de DID, PLC, PDS ou Cloudflare foi feita.
+
+
+### Etapa 3.11 — Projeto da regra de roteamento por tamanho — 2026-10-04
+Objetivo solicitado: manter uploads menores que 100 MB no caminho atual via Cloudflare e enviar somente uploads acima de 100 MB pelo Tailscale.
+
+#### Viabilidade
+- [x] Confirmado que o Cloudflare Free/Pro aceita no máximo 100 MB por request; acima disso o request é rejeitado no edge com 413 antes de chegar ao servidor. citeturn496868search0turn496868search1
+- [x] Portanto, uma regra baseada em `Content-Length` no servidor doméstico não consegue decidir o caminho depois que o request já entrou pelo Cloudflare.
+- [x] A regra precisa ser aplicada antes do envio, no cliente/uploader, ou em um serviço de upload que nós controlemos.
+- [x] Confirmado que o app oficial do Bluesky atualmente envia o vídeo primeiro para `video.bsky.app`, com limite de 300 MB no cliente, e o serviço de vídeo posteriormente faz o `uploadBlob` no PDS. citeturn496868search7turn675671search2
+- [ ] Portanto, somente alterar Nginx/Cloudflare não implementará a regra no fluxo oficial do Bluesky.
+- [ ] Antes de produção, precisamos decidir onde controlar a seleção de rota: fork do cliente/uploader, serviço de vídeo controlado pela Espelunca, ou arquitetura alternativa do PDS.
+
+#### Arquitetura que será investigada
+1. Upload pequeno: permanecer no endpoint atual `https://espelunca.blue` atrás do Cloudflare.
+2. Upload grande: usar um endpoint público dedicado ao Tailscale Funnel.
+3. A seleção deve acontecer antes de transmitir o corpo: `size <= 100 MB → Cloudflare`; `size > 100 MB → Tailscale`.
+4. Não tentar fazer redirect para Tailscale depois que o upload grande já chegou ao Cloudflare, porque o Cloudflare rejeita o request antes do origin.
+5. Não alterar DID/PLC até existir uma arquitetura compatível com a autenticação e a descoberta do PDS pelo `video.bsky.app`.
+
+#### Testes obrigatórios antes de ativar
+- [ ] 2 MB → deve permanecer no caminho Cloudflare.
+- [ ] 99 MB → deve permanecer no caminho Cloudflare e chegar ao PDS.
+- [ ] 100 MB exatos → definir e testar o comportamento de fronteira, considerando que o limite documentado é 100 MB.
+- [ ] 100 MB + 1 byte → deve usar Tailscale e não passar pelo Cloudflare.
+- [x] ~165,8 MB → transporte Tailscale externo comprovado pelo iPhone 5G.
+- [ ] 248 MB → transporte Tailscale externo.
+- [ ] Upload real por `com.atproto.repo.uploadBlob` usando cada rota.
+- [ ] Upload de vídeo real através do fluxo `video.bsky.app → PDS`.
+- [ ] Validar autenticação/service-auth quando o endpoint usado pelo vídeo for diferente de `espelunca.blue`.
+- [ ] Testar falha/queda da rota grande sem afetar uploads pequenos.
+- [ ] Testar que nenhum upload acima de 100 MB tenta entrar pelo Cloudflare.
+- [ ] Testar rollback para a rota atual sem perda de contas, blobs ou registros.
+
+#### Regra de segurança
+Nenhuma alteração de produção, DID, PLC, `PDS_HOSTNAME`, rota principal do Cloudflare ou serviço oficial de vídeo será feita somente com base no teste de transporte. Primeiro precisamos provar o fluxo AT Protocol completo.
+
+Commit deste checkpoint: será registrado no commit desta atualização do `progress.md`.
