@@ -166,7 +166,12 @@ ios_pwa_style = """<style id="espelunca-ios-pwa-layout">
   }
 
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    -webkit-text-size-adjust: 100%;
   }
 
   @media (display-mode: standalone) {
@@ -198,25 +203,68 @@ ios_pwa_repair = r"""<script>
 
   const canonical =
     'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover'
+
+  const baselineKey = 'espelunca-pwa-viewport-baseline'
+  let baselineWidth = Number(sessionStorage.getItem(baselineKey)) || 0
+
+  const rememberHealthyWidth = () => {
+    const width = window.innerWidth || 0
+    if (width > 0 && width < 700) {
+      baselineWidth = width
+      sessionStorage.setItem(baselineKey, String(width))
+    }
+  }
+
+  rememberHealthyWidth()
+
+  let repairing = false
   const repair = () => {
+    if (repairing) return
+
     const visualWidth = window.visualViewport?.width || 0
     const innerWidth = window.innerWidth || 0
+    const visualScale = window.visualViewport?.scale || 1
+    const physicalWidth = window.screen?.width || 0
 
-    // When WebKit drops the mobile viewport it commonly reports a much wider
-    // layout viewport than the visual viewport. Rebuild the viewport once.
-    if (visualWidth > 0 && innerWidth > 0 && Math.abs(innerWidth - visualWidth) > 10) {
-      const current = viewport.getAttribute('content') || canonical
-      viewport.setAttribute(
-        'content',
-        'width=device-width, initial-scale=1, maximum-scale=1',
-      )
-      requestAnimationFrame(() => {
-        window.setTimeout(() => {
-          viewport.setAttribute('content', current || canonical)
-          window.dispatchEvent(new Event('resize'))
-        }, 50)
-      })
+    const widthJump =
+      baselineWidth > 0 &&
+      innerWidth > baselineWidth * 1.05 &&
+      innerWidth - baselineWidth > 10
+
+    const legacyViewport =
+      physicalWidth > 0 && innerWidth > Math.max(physicalWidth * 1.5, 600)
+
+    const visualViewportMismatch =
+      visualWidth > 0 && innerWidth > 0 && Math.abs(innerWidth - visualWidth) > 10
+
+    const scaled =
+      Number.isFinite(visualScale) && visualScale > 1.01
+
+    if (!widthJump && !legacyViewport && !visualViewportMismatch && !scaled) {
+      rememberHealthyWidth()
+      return
     }
+
+    repairing = true
+    const current = viewport.getAttribute('content') || canonical
+
+    // WebKit can retain a stale zoom/viewport state in an installed PWA even
+    // when the DOM APIs no longer agree about the effective viewport. Toggle
+    // to a flat device-width viewport, then restore the canonical shell.
+    viewport.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+    )
+
+    requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        viewport.setAttribute('content', current || canonical)
+        window.dispatchEvent(new Event('resize'))
+        window.scrollTo(0, 0)
+        rememberHealthyWidth()
+        repairing = false
+      }, 50)
+    })
   }
 
   repair()
