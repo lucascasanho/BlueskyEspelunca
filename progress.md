@@ -11,7 +11,7 @@ Objetivo: investigar e preparar uma rota alternativa para uploads grandes do Blu
 - [x] Gargalo atual identificado: Cloudflare limita requisições públicas a 100 MB nos planos aplicáveis.
 - [x] Fluxo oficial de vídeo do social-app verificado: cliente envia ao `video.bsky.app`; o serviço de vídeo posteriormente chama `com.atproto.repo.uploadBlob` no PDS.
 - [x] Tailscale Funnel verificado: pode publicar um serviço local sem port forwarding, usando um hostname `*.ts.net`.
-- [ ] Provar experimentalmente o transporte de um upload >100 MB pelo Funnel.
+- [x] Provar experimentalmente o transporte de um upload >100 MB pelo Funnel.
 - [x] Criar gateway local de mídia com buffering desativado, para não armazenar os vídeos em disco.
 - [x] Criar comando simples de instalação/diagnóstico.
 - [ ] Determinar, com teste real, se o fluxo oficial `video.bsky.app → PDS` pode usar o endpoint alternativo sem alterar a identidade das contas.
@@ -146,5 +146,13 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 - [x] O teste chegou à fase de envio de 101 MB.
 - [x] Identificado erro local no cálculo de duração via `awk`; não houve evidência de falha de transporte nessa execução.
 - [x] Corrigido o cálculo de duração em `scripts/media-transport-test.sh`.
-- [ ] Reexecutar `bluesky media test 101`.
-- [ ] Reexecutar `bluesky media test 276`.
+- [x] Reexecutar `bluesky media test 101`.
+- [x] Reexecutar `bluesky media test 276`.
+
+
+### Etapa 3.3 — Transporte >100 MB comprovado
+- [x] Teste de 101 MB: 101.000.000 bytes enviados e recebidos.
+- [x] Teste de 276 MB: 276.000.000 bytes enviados e recebidos.
+- [x] Tailscale Funnel transportou ambos os corpos sem HTTP 413.
+- [x] O teste de 276 MB confirma que o caminho alternativo consegue transportar um arquivo equivalente ao vídeo usado no diagnóstico do Bluesky.
+- [ ] Ainda falta integrar esse caminho ao fluxo real `video.bsky.app -> uploadBlob`.
