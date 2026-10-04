@@ -401,12 +401,12 @@ text = text.replace(
     "import {app, com} from '#/lexicons'",
     1,
 )
-old_follow = """    const followDids = [
-      BSKY_APP_ACCOUNT_DID,
-      ...(listItems?.map(i => i.subject.did) ?? []),
-    ]"""
-new_follow = """    let espeluncaDid: string | undefined
-    try {
+follow_pattern = re.compile(
+    r"    (?:const followDids = \[\n.*?\n    \])",
+    re.DOTALL,
+)
+follow_replacement = """    let espeluncaDid: string | undefined
+    try:
       const resolved = await pdsClient.call(com.atproto.identity.resolveHandle, {
         handle: 'espelunca.blue',
       })
@@ -421,9 +421,11 @@ new_follow = """    let espeluncaDid: string | undefined
       ...(espeluncaDid ? [espeluncaDid] : []),
       ...(listItems?.map(i => i.subject.did) ?? []),
     ]"""
-if old_follow not in text:
-    raise SystemExit("Bloco followDids não encontrado no StepFinished upstream")
-text = text.replace(old_follow, new_follow, 1)
+text, count = follow_pattern.subn(follow_replacement, text, count=1)
+if count != 1:
+    raise SystemExit("Não foi possível localizar followDids no StepFinished.")
+step_finished.write_text(text)
+
 # Pin the Espelunca BR feed for every account completing onboarding on this branded app.
 # The URI belongs to the public Feed Generator and is saved alongside the normal
 # Bluesky defaults. Re-running this script must not create duplicate entries.
