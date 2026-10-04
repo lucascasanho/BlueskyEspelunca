@@ -28,6 +28,7 @@ if [[ -f "${PDS_ENV_FILE}" ]]; then
   set_pds_env "PDS_HOME_URL" "https://${PDS_HOSTNAME}"
   set_pds_env "PDS_LOGO_URL" "https://${PDS_HOSTNAME}/espelunca-icon.svg"
   set_pds_env "PDS_PRIMARY_COLOR" "#006AFF"
+  set_pds_env "PDS_BLOB_UPLOAD_LIMIT" "524288000"
   set_pds_env "PDS_EMAIL_DISABLE_CONFIRMATION_LINK" "true"
   set_pds_env "PDS_INVITE_REQUIRED" "false"
 fi
