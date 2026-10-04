@@ -153,8 +153,8 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 ### Etapa 3.3 — Transporte >100 MB comprovado
 - [x] Teste de 101 MB: 101.000.000 bytes enviados e recebidos.
 - [x] Teste de 276 MB: 276.000.000 bytes enviados e recebidos.
-- [x] Tailscale Funnel transportou ambos os corpos sem HTTP 413.
-- [x] O teste de 276 MB confirma que o caminho alternativo consegue transportar um arquivo equivalente ao vídeo usado no diagnóstico do Bluesky.
+- [x] Tailscale Funnel recebeu ambos os testes no nó local sem HTTP 413.
+- [ ] O teste local de 276 MB confirma o gateway, mas ainda não confirma entrada real pela Internet.
 - [ ] Ainda falta integrar esse caminho ao fluxo real `video.bsky.app -> uploadBlob`.
 
 
@@ -171,3 +171,11 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 - [x] O código atual do `goat` possui `plc update`, `plc sign` e `plc submit`, permitindo preparar e publicar uma nova operação PLC com alteração do endpoint PDS.
 - [x] A documentação do DID/PLC confirma que `serviceEndpoint` é o local atual do PDS e deve ser uma URL HTTPS pública sem path.
 - [ ] Ainda não assumir que o endpoint Tailscale será a solução final: primeiro testar uma conta isolada e confirmar o comportamento do `video.bsky.app`.
+
+
+### Correção metodológica do teste — 2026-10-04
+- [x] Identificado que `bluesky media test 101/276` executa o cliente no mesmo host que publica o Funnel.
+- [x] Corrigida a interpretação: isso não é prova de tráfego externo/hairpin pela Internet.
+- [x] Criado `scripts/media-external-test-server.sh`.
+- [x] Criado `bluesky media test-external <MB>`, que deixa o servidor aguardando um POST real vindo de outra máquina/rede.
+- [ ] Executar `bluesky media test-external 276` e enviar o arquivo a partir de outra conexão.
