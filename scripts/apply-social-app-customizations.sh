@@ -562,6 +562,47 @@ if "orderedFeeds" not in header_text:
     raise SystemExit("A ordenação do HomeHeader não foi aplicada.")
 home_header.write_text(header_text)
 
+# Canonicalize pinned feed order at the shared data-query layer. Both Home
+# implementations consume this query, so tabs and Pager pages receive the
+# exact same sequence instead of depending on UI-only sorting.
+feed_query = Path("src/state/queries/feed.ts")
+text = feed_query.read_text()
+text = text.replace(
+    "import {DISCOVER_FEED_URI, DISCOVER_SAVED_FEED} from '#/lib/constants'",
+    """import {
+  DISCOVER_FEED_URI,
+  DISCOVER_SAVED_FEED,
+  ESPELUNCA_BR_FEED_URI,
+  TIMELINE_SAVED_FEED,
+} from '#/lib/constants'""",
+    1,
+)
+feed_anchor = """  const pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+"""
+feed_custom = """  const pinnedItems = useMemo(() => {
+    const items = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
+    if (!items.some(item => item.value === ESPELUNCA_BR_FEED_URI)) {
+      return items
+    }
+
+    const rank = (item: (typeof items)[number]) => {
+      if (item.value === TIMELINE_SAVED_FEED.value) return 0
+      if (item.value === ESPELUNCA_BR_FEED_URI) return 1
+      if (item.value === DISCOVER_FEED_URI) return 2
+      return 3
+    }
+
+    return items
+      .map((item, index) => ({item, index}))
+      .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
+      .map(({item}) => item)
+  }, [preferences?.savedFeeds])
+"""
+if feed_anchor not in text:
+    raise SystemExit("Não foi possível localizar pinnedItems na feed query.")
+text = text.replace(feed_anchor, feed_custom, 1)
+feed_query.write_text(text)
+
 # Both the legacy Home and the active Following v2 Home can render the
 # Web home route. Keep their feed order identical.
 for home in [
@@ -634,6 +675,7 @@ step_check = Path("src/screens/Onboarding/StepFinished/index.tsx").read_text()
 create_check = Path("src/state/session/create-account.ts").read_text()
 home_legacy_check = Path("src/view/screens/Home.tsx").read_text()
 home_v2_check = Path("src/features/followingV2/home/Home.tsx").read_text()
+feed_query_check = Path("src/state/queries/feed.ts").read_text()
 for name, source in [
     ("StepFinished", step_check),
     ("create-account", create_check),
@@ -644,6 +686,9 @@ for name, source in [
         raise SystemExit(f"Validação falhou: Video voltou ao conjunto padrão de {name}.")
     if "TIMELINE_SAVED_FEED" not in source or "DISCOVER_SAVED_FEED" not in source:
         raise SystemExit(f"Validação falhou: {name} perdeu os feeds padrão esperados.")
+
+if "ESPELUNCA_BR_FEED_URI" not in feed_query_check:
+    raise SystemExit("Validação falhou: feed query não contém o Feed Espelunca BR.")
 
 for name, source in [
     ("Home legado", home_legacy_check),
