@@ -149,20 +149,31 @@ if viewport not in text:
     text = text.replace("</head>", f"  {viewport}\n</head>", 1)
 
 # Espelunca iOS PWA layout normalization
-# iOS standalone WebKit does not need the desktop-oriented forced vertical
-# scrollbar. Constrain the document/root box so a small horizontal overflow
-# cannot become a visible side scroll artifact on iPhone.
+# WebKit has a known standalone-PWA regression where the viewport can fall back
+# to a legacy desktop width (often ~980px) even though the device is narrower.
+# This makes the whole React Native Web layout appear slightly/strongly zoomed
+# and can also cause horizontal overflow. WebKit's documented workaround is to
+# toggle the viewport meta to a flat device-width scale and then restore it.
 ios_pwa_style = """<style id="espelunca-ios-pwa-layout">
 @supports (-webkit-touch-callout: none) {
+  html,
+  body,
+  #root {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
   @media (display-mode: standalone) {
     html,
     body,
     #root {
-      box-sizing: border-box;
       width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      overflow-x: hidden;
     }
 
     body {
@@ -174,6 +185,52 @@ ios_pwa_style = """<style id="espelunca-ios-pwa-layout">
 if 'id="espelunca-ios-pwa-layout"' not in text:
     text = text.replace("</head>", f"  {ios_pwa_style}\n</head>", 1)
 
+ios_pwa_repair = r"""<script>
+(() => {
+  const isStandalone =
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true
+
+  if (!isStandalone) return
+
+  const viewport = document.querySelector('meta[name="viewport"]')
+  if (!viewport) return
+
+  const canonical =
+    'width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover'
+  const repair = () => {
+    const visualWidth = window.visualViewport?.width || 0
+    const innerWidth = window.innerWidth || 0
+
+    // When WebKit drops the mobile viewport it commonly reports a much wider
+    // layout viewport than the visual viewport. Rebuild the viewport once.
+    if (visualWidth > 0 && innerWidth > 0 && Math.abs(innerWidth - visualWidth) > 10) {
+      const current = viewport.getAttribute('content') || canonical
+      viewport.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1, maximum-scale=1',
+      )
+      requestAnimationFrame(() => {
+        window.setTimeout(() => {
+          viewport.setAttribute('content', current || canonical)
+          window.dispatchEvent(new Event('resize'))
+        }, 50)
+      })
+    }
+  }
+
+  repair()
+  window.addEventListener('pageshow', repair)
+  window.addEventListener('resize', repair)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) repair()
+  })
+})()
+</script>"""
+if "WebKit drops the mobile viewport" not in text:
+    text = text.replace("</head>", f"  {ios_pwa_repair}\n</head>", 1)
+
+path.write_text(text)
 path.write_text(text)
 PY
 
