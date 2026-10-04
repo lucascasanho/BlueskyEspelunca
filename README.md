@@ -46,6 +46,49 @@ O instalador:
 12. publica o build local em `WEB_PORT=3101`;
 13. cria serviços systemd separados.
 
+## Gateway de mídia via Tailscale
+
+Existe uma implementação experimental para transportar `com.atproto.repo.uploadBlob` por Tailscale Funnel, sem abrir portas no roteador e sem armazenar o vídeo na Oracle ou no servidor intermediário.
+
+Instalação:
+
+```bash
+bluesky media install
+sudo tailscale up
+bluesky media status
+```
+
+Teste de transporte acima de 100 MB:
+
+```bash
+bluesky media test 101
+bluesky media test 276
+```
+
+O teste usa o Funnel em HTTPS 8443 temporariamente, cria um arquivo esparso local e confirma que exatamente o número esperado de bytes chegou ao servidor doméstico. O arquivo é removido no final.
+
+Para publicar o gateway pelo Funnel em produção de teste:
+
+```bash
+bluesky media funnel
+bluesky media url
+bluesky media status
+```
+
+O Funnel usa um hostname `*.ts.net` fornecido pelo Tailscale. Não é necessário abrir portas no roteador. O hostname `espelunca.blue` continua separado e pode continuar atrás do Cloudflare.
+
+**Importante:** esta implementação não altera `PDS_HOSTNAME`, DID, PLC ou o endpoint principal das contas. Portanto, ela ainda não faz o `video.bsky.app` enviar o blob final para o hostname Tailscale.
+
+O Bluesky localiza o PDS a partir do DID Document da conta. O fluxo oficial de vídeo obtém um service-auth e, no final do processamento, realiza `com.atproto.repo.uploadBlob` no PDS da conta. Por isso, adicionar um segundo hostname Tailscale sem alterar o endpoint de PDS anunciado não muda o destino do serviço de vídeo.
+
+Para transformar o Funnel em rota de produção, seria necessário primeiro decidir como o PDS será anunciado publicamente. Uma possibilidade futura é usar um hostname de PDS separado do site, por exemplo `pds.espelunca.blue`, e atualizar as identidades hospedadas de acordo com o procedimento de migração/alteração de hostname do AT Protocol. Essa mudança não é aplicada automaticamente por estes scripts.
+
+Fontes da arquitetura e pesquisa detalhada:
+- `docs/media-upload/tailscale-research.md`
+- Tailscale Funnel: https://tailscale.com/docs/features/tailscale-funnel
+- AT Protocol self-hosting: https://atproto.com/guides/self-hosting
+- Video upload: https://bsky.network/docs/about-bluesky-content/video/
+
 ## Cloudflare Tunnel
 
 O Tunnel existente da Espelunca pode encaminhar os serviços sem abrir 3100/3101 na Internet.
