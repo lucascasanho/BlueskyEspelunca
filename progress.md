@@ -65,3 +65,8 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] Porta local padrão: `3190`.
 - [x] Limite de corpo padrão: `500m`.
 - [x] Caminho do arquivo de configuração Nginx ficou configurável.
+
+
+### Etapa 2.3 — Comando principal
+- [x] O comando `bluesky` passou a encaminhar `bluesky media ...`.
+- [x] A execução usa `bash` para não depender de bit executável do arquivo recém-criado.
