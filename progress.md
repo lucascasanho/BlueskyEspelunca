@@ -235,3 +235,14 @@ Commit da correção:
 - [x] Corrigido o escape das quebras de linha no JavaScript da página de teste.
 - [ ] Ainda falta executar novamente o botão `Testar POST de 1 KB`.
 - Commit: `67a5ee804c110ca209a55ed688c4137a669270a1`.
+
+
+### Etapa 3.10 — Upload externo real comprovado — 2026-10-04
+- [x] iPhone em rede 5G enviou um arquivo real pela página temporária do teste.
+- [x] Arquivo enviado: aproximadamente 165,8 MB.
+- [x] Bytes recebidos no servidor: `165799468`.
+- [x] `Content-Length`: `165799468`.
+- [x] Resultado: `TESTE EXTERNO DE TRANSPORTE: OK`.
+- [x] Comprovado o caminho Internet móvel → Tailscale Funnel → servidor doméstico para upload acima de 100 MB.
+- [ ] Ainda falta testar ~248 MB e, principalmente, provar o fluxo oficial `video.bsky.app → PDS`.
+- [ ] Nenhuma alteração de DID, PLC, PDS ou Cloudflare foi feita.
