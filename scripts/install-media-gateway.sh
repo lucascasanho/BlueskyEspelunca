@@ -31,7 +31,7 @@ fi
 
 echo "==> Instalando dependências do gateway"
 ${SUDO} apt-get update
-${SUDO} apt-get install -y ca-certificates curl gnupg nginx
+${SUDO} apt-get install -y ca-certificates curl gnupg jq nginx python3
 
 if ! command -v tailscale >/dev/null 2>&1; then
   echo "==> Instalando Tailscale"
