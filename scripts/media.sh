@@ -36,6 +36,7 @@ Comandos:
   status        Mostra gateway, Tailscale e Funnel.
   funnel        Publica o gateway no Funnel, em HTTPS 443.
   funnel-off    Remove o Funnel de HTTPS 443 deste gateway.
+  test [MB]     Testa transporte de corpo grande pelo Funnel (padrão 101 MB).
   url           Mostra o hostname público do Tailscale.
   logs          Mostra as últimas requisições do nginx.
 EOF
