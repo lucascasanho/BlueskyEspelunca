@@ -219,3 +219,12 @@ Commit da correção:
 - [x] Em caso de falha futura, o script agora mostra o erro de sintaxe/log em vez de apenas informar que o servidor não iniciou.
 - [ ] Ainda falta executar o teste externo de 1 KB.
 - Commit: `f68fa81a95c537569944ed74d3cc55eb10eb7902`.
+
+
+### Etapa 3.8 — Correção da URL da interface — 2026-10-04
+- [x] Identificado que o endereço mostrado anteriormente apontava para `/upload-test`, enquanto a interface HTML estava em `/`.
+- [x] A interface agora é servida tanto em `/` quanto em `/upload-test`.
+- [x] O script passa a imprimir separadamente a URL da página e o endpoint POST.
+- [x] Corrigido o JavaScript embutido para uma versão sem chaves Python/JavaScript conflitantes.
+- [ ] Ainda falta executar o teste de 1 KB pela nova interface.
+- Commit: `74018e46c5a559a02b937266ea5d9e605fec046a`.
