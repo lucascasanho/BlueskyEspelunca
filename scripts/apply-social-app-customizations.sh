@@ -142,6 +142,27 @@ text = text.replace(
 )
 server_input.write_text(text)
 
+# iOS Safari automatically zooms focused web inputs whose computed font size is
+# below 16 CSS px. The upstream TextField uses 15 px for text_md, and the login
+# screen autofocuses the username field. Keep the authentication fields at the
+# Safari-safe size on web without changing native app typography.
+login_form = Path("src/screens/Login/LoginForm.tsx")
+text = login_form.read_text()
+old_import = "import {atoms as a, native, tokens, useBreakpoints, useTheme} from '#/alf'"
+new_import = "import {atoms as a, native, tokens, useBreakpoints, useTheme, web} from '#/alf'"
+if old_import not in text:
+    raise SystemExit("Não foi possível localizar o import de #/alf no LoginForm.")
+text = text.replace(old_import, new_import, 1)
+
+for test_id in ("loginUsernameInput", "loginPasswordInput", "loginAuthFactorTokenInput"):
+    pattern = rf'(<TextField\.Input\n\s+testID="{test_id}"\n)'
+    replacement = r'\1            style={web({fontSize: 16})}' + "\n"
+    text, count = re.subn(pattern, replacement, text, count=1)
+    if count != 1:
+        raise SystemExit(f"Não foi possível ajustar o font-size Safari de {test_id}.")
+
+login_form.write_text(text)
+
 # Default appearance: darkest theme. Users may still explicitly choose Light
 # or Dim in Appearance settings.
 schema = Path("src/state/persisted/schema.ts")
