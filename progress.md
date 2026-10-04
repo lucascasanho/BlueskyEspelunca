@@ -88,3 +88,9 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] `bluesky media test [MB]` adicionado.
 - [x] Instalação do gateway passou a usar `bash` explicitamente, sem depender de permissões executáveis do GitHub Contents API.
 - [x] Teste padrão definido em 101 MB para ultrapassar o limite atual de 100 MB; 276 MB pode ser solicitado com `bluesky media test 276`.
+
+
+### Etapa 4 — Documentação
+- [x] `README.md` documenta instalação, teste e comandos do gateway.
+- [x] README deixa explícito que o gateway é experimental e não altera o endpoint de PDS.
+- [x] README registra a necessidade de uma decisão/migração de endpoint antes de produção.
