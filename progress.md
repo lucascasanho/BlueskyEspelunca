@@ -156,3 +156,18 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 - [x] Tailscale Funnel transportou ambos os corpos sem HTTP 413.
 - [x] O teste de 276 MB confirma que o caminho alternativo consegue transportar um arquivo equivalente ao vídeo usado no diagnóstico do Bluesky.
 - [ ] Ainda falta integrar esse caminho ao fluxo real `video.bsky.app -> uploadBlob`.
+
+
+### Etapa 4.1 — Inspeção de identidade
+- [x] `scripts/media-inspect.sh` criado para inspeção somente leitura de DID/PLC.
+- [x] O comando mostra endpoint PDS atual, handle, DID e alvo Tailscale.
+- [x] Integrado como `bluesky media inspect <DID ou handle>`.
+- [x] Nenhuma operação PLC é enviada por esse comando.
+
+
+### Nova descoberta técnica — 2026-10-04
+- [x] A investigação atual encontrou o issue oficial `bluesky-social/pds#298`, que reproduz o problema de vídeo quando o hostname usado pelo usuário difere do endpoint/PDS DID.
+- [x] O próprio issue registra que apontar o `AtprotoPersonalDataServer` do PLC para o endpoint público usado pelo PDS elimina a falha inicial de vídeo, embora o autor tenha encontrado outro erro de processamento depois.
+- [x] O código atual do `goat` possui `plc update`, `plc sign` e `plc submit`, permitindo preparar e publicar uma nova operação PLC com alteração do endpoint PDS.
+- [x] A documentação do DID/PLC confirma que `serviceEndpoint` é o local atual do PDS e deve ser uma URL HTTPS pública sem path.
+- [ ] Ainda não assumir que o endpoint Tailscale será a solução final: primeiro testar uma conta isolada e confirmar o comportamento do `video.bsky.app`.
