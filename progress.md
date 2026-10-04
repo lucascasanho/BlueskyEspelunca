@@ -70,3 +70,7 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 ### Etapa 2.3 — Comando principal
 - [x] O comando `bluesky` passou a encaminhar `bluesky media ...`.
 - [x] A execução usa `bash` para não depender de bit executável do arquivo recém-criado.
+
+
+### Etapa 2.4 — Dependências
+- [x] Instalador atualizado para incluir `jq` e `python3`, usados pelo diagnóstico/teste.
