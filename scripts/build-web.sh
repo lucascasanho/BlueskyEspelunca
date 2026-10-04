@@ -39,20 +39,40 @@ path.write_text(text)
 PY
 
 # Install the Espelunca PWA shell and assets into the generated web output.
-PWA_DIR="${ROOT_DIR}/pwa"
-if [[ ! -f "${PWA_DIR}/manifest.json" || ! -f "${PWA_DIR}/sw.js" ]]; then
-  echo "ERRO: arquivos PWA ausentes em ${PWA_DIR}"
+PWA_DIR="$ROOT_DIR/pwa"
+if [[ ! -f "$PWA_DIR/manifest.json" || ! -f "$PWA_DIR/sw.js" ]]; then
+  echo "ERRO: arquivos PWA ausentes em $PWA_DIR"
+  exit 1
+fi
+if [[ ! -f "$PWA_DIR/icons/icon-any.svg" || ! -f "$PWA_DIR/icons/icon-maskable.svg" ]]; then
+  echo "ERRO: fontes de ícone PWA ausentes em $PWA_DIR/icons"
   exit 1
 fi
 
 mkdir -p dist/icons dist/screenshots
-cp "${PWA_DIR}/manifest.json" dist/manifest.json
-cp "${PWA_DIR}/icons/icon-96.png" dist/icons/icon-96.png
-cp "${PWA_DIR}/icons/icon-192.png" dist/icons/icon-192.png
-cp "${PWA_DIR}/icons/icon-512.png" dist/icons/icon-512.png
-cp "${ROOT_DIR}/desktop-home.png" dist/screenshots/desktop-home.png
-cp "${ROOT_DIR}/mobile-home.png" dist/screenshots/mobile-home.png
-cp "${PWA_DIR}/sw.js" dist/sw.js
+
+# Generate the normal PWA icons as rounded blue app tiles with the white Espelunca mark.
+for size in 96 192 512; do
+  magick -background none \
+    "$PWA_DIR/icons/icon-any.svg" \
+    -resize "${size}x${size}" \
+    -define png:color-type=6 \
+    "dist/icons/icon-${size}.png"
+done
+
+# Generate dedicated maskable icons with an opaque background and generous safe-zone padding.
+for size in 192 512; do
+  magick -background none \
+    "$PWA_DIR/icons/icon-maskable.svg" \
+    -resize "${size}x${size}" \
+    -define png:color-type=6 \
+    "dist/icons/icon-${size}-maskable.png"
+done
+
+cp "$PWA_DIR/manifest.json" dist/manifest.json
+cp "$ROOT_DIR/desktop-home.png" dist/screenshots/desktop-home.png
+cp "$ROOT_DIR/mobile-home.png" dist/screenshots/mobile-home.png
+cp "$PWA_DIR/sw.js" dist/sw.js
 
 python3 - <<'PY'
 from pathlib import Path
