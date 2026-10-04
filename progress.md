@@ -42,3 +42,12 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] Registrado o fluxo oficial de vídeo e a dependência do DID Document para localizar o PDS.
 - [x] Registrada a limitação de que um segundo hostname `*.ts.net` não é automaticamente escolhido pelo `video.bsky.app`.
 - [x] Definido gateway local restrito ao endpoint `com.atproto.repo.uploadBlob`, sem armazenamento permanente.
+
+
+### Etapa 2 — Primeiro componente implementado
+- [x] `scripts/install-media-gateway.sh` criado.
+- [x] Gateway limitado ao endpoint `/xrpc/com.atproto.repo.uploadBlob`.
+- [x] Gateway escuta somente em `127.0.0.1`.
+- [x] Nginx configurado com `proxy_request_buffering off`, evitando guardar o corpo do upload em disco como etapa intermediária.
+- [x] Limite local configurável, padrão 500 MB, alinhado ao limite atual do PDS.
+- [x] Script instala Tailscale, mas não ativa o Funnel automaticamente nesta fase.
