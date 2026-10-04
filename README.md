@@ -153,6 +153,8 @@ Essas customizações são reaplicadas pelo compose versionado e, portanto, não
 
 O repositório não copia o código inteiro do Bluesky. O upstream é baixado em `/opt/espelunca-bluesky/social-app` durante a instalação/atualização. As alterações próprias da Espelunca ficam versionadas aqui, principalmente em `scripts/apply-social-app-customizations.sh` e, para alterações maiores, em `patches/social-app/*.patch`.
 
+O PDS da Espelunca está configurado com `PDS_BLOB_UPLOAD_LIMIT=524288000`, equivalente a 500 MiB por blob. Esse é o limite no PDS; o acesso público por Cloudflare pode impor um limite menor de tamanho de requisição, conforme o plano da zona.
+
 Isso permite alterar a interface ou o comportamento do aplicativo no próprio GitHub e reaplicar essas alterações automaticamente depois que o upstream for atualizado.
 
 O build Web cria também `dist/static/_expo -> ../_expo`, necessário para o layout de assets produzido pelo build atual do social-app. O serviço Web é sempre `espelunca-bluesky-web.service`; o instalador não deve alterar o serviço Mastodon `espelunca-web.service`.
