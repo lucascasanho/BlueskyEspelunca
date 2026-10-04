@@ -105,12 +105,36 @@ class Handler(BaseHTTPRequestHandler):
 <p>Esta página envia o arquivo diretamente por POST a partir desta conexão.</p>
 <input id="file" type="file">
 <br><br>
+<button id="ping" type="button">Testar POST de 1 KB</button>
 <button id="send" type="button">Enviar arquivo</button>
 <pre id="out" style="white-space:pre-wrap"></pre>
 <script>
 const fileInput = document.getElementById('file');
+const pingButton = document.getElementById('ping');
 const button = document.getElementById('send');
 const out = document.getElementById('out');
+
+pingButton.addEventListener('click', async () => {
+  pingButton.disabled = true;
+  button.disabled = true;
+  const body = new Uint8Array(1024);
+  for (let i = 0; i < body.length; i++) body[i] = i % 256;
+  out.textContent = 'Enviando exatamente 1.024 bytes...';
+
+  try {
+    const response = await fetch('/upload-test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/octet-stream'},
+      body
+    });
+    out.textContent = 'HTTP ' + response.status + '\\n' + await response.text();
+  } catch (error) {
+    out.textContent = 'Falha de rede: ' + error;
+  } finally {
+    pingButton.disabled = false;
+    button.disabled = false;
+  }
+});
 
 button.addEventListener('click', () => {{
   const file = fileInput.files && fileInput.files[0];
@@ -220,6 +244,8 @@ button.addEventListener('click', () => {{
             "minimum_bytes": minimum_bytes,
             "transfer_encoding": transfer_encoding,
             "expect": expect_header,
+            "content_type": self.headers.get("Content-Type") or "",
+            "user_agent": self.headers.get("User-Agent") or "",
             "ok": size_ok,
         }
         with open(result_path, "w", encoding="utf-8") as fp:
