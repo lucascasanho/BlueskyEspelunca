@@ -595,8 +595,10 @@ text = text.replace(
 } from '#/lib/constants'""",
     1,
 )
-feed_anchor = """  const pinnedItems = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
-"""
+feed_anchor = re.search(
+    r"(?m)^  const pinnedItems = .*savedFeeds\.filter\(feed => feed\.pinned\) .*?$",
+    text,
+)
 feed_custom = """  const pinnedItems = useMemo(() => {
     const items = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
     const feedKey = (value: string) => value.split('/').pop() || value
@@ -623,9 +625,9 @@ feed_custom = """  const pinnedItems = useMemo(() => {
       .map(({item}) => item)
   }, [preferences?.savedFeeds])
 """
-if feed_anchor not in text:
+if not feed_anchor:
     raise SystemExit("Não foi possível localizar pinnedItems na feed query.")
-text = text.replace(feed_anchor, feed_custom, 1)
+text = text[:feed_anchor.start()] + feed_custom.rstrip("\n") + "\n" + text[feed_anchor.end():]
 feed_query.write_text(text)
 
 # Both the legacy Home and the active Following v2 Home can render the
