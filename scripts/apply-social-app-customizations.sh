@@ -505,17 +505,20 @@ header_custom = """  const {feeds, onSelect: onSelectProp} = props
 
   const orderedFeeds = useMemo(() => {
     const indexed = feeds.map((feed, index) => ({feed, index}))
+    const feedKey = (uri: string) => uri.split('/').pop() || uri
     const hasEspeluncaFeed = indexed.some(
-      ({feed}) => feed.uri === ESPELUNCA_BR_FEED_URI,
+      ({feed}) => feedKey(feed.uri) === 'espelunca-br',
     )
     if (!hasEspeluncaFeed) {
       return indexed
     }
 
     const rank = (feed: (typeof indexed)[number]['feed']) => {
+      const key = feedKey(feed.uri)
       if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
-      if (feed.uri === ESPELUNCA_BR_FEED_URI) return 1
-      if (feed.uri === DISCOVER_FEED_URI) return 2
+      if (key === 'espelunca-br') return 1
+      if (feed.uri === DISCOVER_FEED_URI || key === 'whats-hot') return 2
+      if (key === 'thevids') return 99
       return 3
     }
 
@@ -581,19 +584,26 @@ feed_anchor = """  const pinnedItems = preferences?.savedFeeds.filter(feed => fe
 """
 feed_custom = """  const pinnedItems = useMemo(() => {
     const items = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
-    if (!items.some(item => item.value === ESPELUNCA_BR_FEED_URI)) {
+    const feedKey = (value: string) => value.split('/').pop() || value
+    const hasEspeluncaFeed = items.some(
+      item => feedKey(item.value) === 'espelunca-br',
+    )
+    if (!hasEspeluncaFeed) {
       return items
     }
 
     const rank = (item: (typeof items)[number]) => {
+      const key = feedKey(item.value)
       if (item.value === TIMELINE_SAVED_FEED.value) return 0
-      if (item.value === ESPELUNCA_BR_FEED_URI) return 1
-      if (item.value === DISCOVER_FEED_URI) return 2
+      if (key === 'espelunca-br') return 1
+      if (item.value === DISCOVER_FEED_URI || key === 'whats-hot') return 2
+      if (key === 'thevids') return 99
       return 3
     }
 
     return items
       .map((item, index) => ({item, index}))
+      .filter(({item}) => feedKey(item.value) !== 'thevids')
       .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
       .map(({item}) => item)
   }, [preferences?.savedFeeds])
