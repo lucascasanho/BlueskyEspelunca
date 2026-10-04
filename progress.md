@@ -179,3 +179,16 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 - [x] Criado `scripts/media-external-test-server.sh`.
 - [x] Criado `bluesky media test-external <MB>`, que deixa o servidor aguardando um POST real vindo de outra máquina/rede.
 - [ ] Executar `bluesky media test-external 276` e enviar o arquivo a partir de outra conexão.
+
+
+### Etapa 3.4 — Diagnóstico do POST pelo iPhone — 2026-10-04
+- [x] Teste externo foi acessado pelo iPhone em rede 5G, confirmando que o Funnel está publicamente acessível fora da rede doméstica.
+- [x] Identificado que o servidor de teste devolvia `0/N` quando o corpo do POST não era lido corretamente.
+- [x] Atualizado `scripts/media-external-test-server.sh` para HTTP/1.1 com suporte explícito a `Expect: 100-continue`.
+- [x] Adicionado suporte a `Transfer-Encoding: chunked` e diagnóstico de `Content-Length`, `Transfer-Encoding` e `Expect`.
+- [x] Adicionado modo `auto` para testar arquivos reais sem exigir que tenham exatamente 101/276 MB: `bluesky media test-external auto 100`.
+- [ ] Ainda não comprovar o envio efetivo de um arquivo grande pelo iPhone.
+- [ ] Não alterar DID, PLC, PDS ou Cloudflare antes da comprovação do transporte externo.
+
+Commit da correção:
+- `40224e930c2f3c15c03f04c67ad936364fdb1fe8` — corrige o servidor de teste para POSTs do iPhone e adiciona modo de tamanho automático.
