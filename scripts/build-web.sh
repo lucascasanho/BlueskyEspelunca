@@ -142,6 +142,38 @@ if ('serviceWorker' in navigator) {
 if "navigator.serviceWorker.register('/sw.js'" not in text:
     text = text.replace("</body>", f"  {sw_script}\n</body>", 1)
 
+# Keep the PWA viewport explicit even if Expo changes the generated HTML template.
+viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">'
+text = re.sub(r'<meta\\s+name="viewport"[^>]*>', viewport, text, count=1, flags=re.IGNORECASE)
+if viewport not in text:
+    text = text.replace("</head>", f"  {viewport}\\n</head>", 1)
+
+// Espelunca iOS PWA layout normalization
+# iOS standalone WebKit does not need the desktop-oriented forced vertical
+# scrollbar. Constrain the document/root box so a small horizontal overflow
+# cannot become a visible side scroll artifact on iPhone.
+ios_pwa_style = """<style id="espelunca-ios-pwa-layout">
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    html,
+    body,
+    #root {
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+
+    body {
+      overflow-y: auto;
+    }
+  }
+}
+</style>"""
+if 'id="espelunca-ios-pwa-layout"' not in text:
+    text = text.replace("</head>", f"  {ios_pwa_style}\\n</head>", 1)
+
 path.write_text(text)
 PY
 
