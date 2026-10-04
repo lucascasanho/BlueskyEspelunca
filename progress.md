@@ -228,3 +228,10 @@ Commit da correção:
 - [x] Corrigido o JavaScript embutido para uma versão sem chaves Python/JavaScript conflitantes.
 - [ ] Ainda falta executar o teste de 1 KB pela nova interface.
 - Commit: `74018e46c5a559a02b937266ea5d9e605fec046a`.
+
+
+### Etapa 3.9 — Correção do JavaScript no Safari — 2026-10-04
+- [x] Identificado por inspeção que as sequências `\n` dentro da string HTML Python eram convertidas em quebras de linha literais dentro de strings JavaScript, causando erro de sintaxe e deixando os botões sem ação.
+- [x] Corrigido o escape das quebras de linha no JavaScript da página de teste.
+- [ ] Ainda falta executar novamente o botão `Testar POST de 1 KB`.
+- Commit: `67a5ee804c110ca209a55ed688c4137a669270a1`.
