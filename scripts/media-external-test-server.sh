@@ -82,17 +82,81 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         return True
     def do_GET(self):
+        if self.path != "/":
+            self.send_response(404)
+            self.end_headers()
+            return
+
         if expected:
-            target = f"Expected upload: {expected} bytes\\n"
+            target = f"Expected exact upload: {expected} bytes"
         else:
-            target = f"Expected minimum upload: {minimum_bytes} bytes\\n"
-        body = (
-            "Espelunca media transport test\\n\\n"
-            + target
-            + "Use POST /upload-test from a DIFFERENT Internet connection.\\n"
-        ).encode()
+            target = f"Expected minimum upload: {minimum_bytes} bytes"
+
+        html = f"""<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Espelunca media transport test</title>
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:760px;margin:40px auto;padding:0 16px">
+<h1>Espelunca media transport test</h1>
+<p>{target}</p>
+<p>Esta página envia o arquivo diretamente por POST a partir desta conexão.</p>
+<input id="file" type="file">
+<br><br>
+<button id="send" type="button">Enviar arquivo</button>
+<pre id="out" style="white-space:pre-wrap"></pre>
+<script>
+const fileInput = document.getElementById('file');
+const button = document.getElementById('send');
+const out = document.getElementById('out');
+
+button.addEventListener('click', () => {{
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) {{
+    out.textContent = 'Selecione um arquivo primeiro.';
+    return;
+  }}
+
+  button.disabled = true;
+  out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\\n';
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload-test', true);
+  xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+  xhr.upload.onprogress = (event) => {{
+    if (event.lengthComputable) {{
+      const pct = ((event.loaded / event.total) * 100).toFixed(1);
+      out.textContent = 'Enviando: ' + pct + '%\\n'
+        + event.loaded.toLocaleString('pt-BR') + ' / '
+        + event.total.toLocaleString('pt-BR') + ' bytes';
+    }} else {{
+      out.textContent = 'Enviando: ' + event.loaded.toLocaleString('pt-BR') + ' bytes';
+    }}
+  }};
+
+  xhr.onload = () => {{
+    out.textContent = 'HTTP ' + xhr.status + '\\n' + xhr.responseText;
+    button.disabled = false;
+  }};
+
+  xhr.onerror = () => {{
+    out.textContent = 'Falha de rede durante o POST.';
+    button.disabled = false;
+  }};
+
+  xhr.send(file);
+}});
+</script>
+</body>
+</html>"""
+
+        body = html.encode()
         self.send_response(200)
-        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
