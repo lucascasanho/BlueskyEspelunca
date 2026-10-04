@@ -94,3 +94,9 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] `README.md` documenta instalação, teste e comandos do gateway.
 - [x] README deixa explícito que o gateway é experimental e não altera o endpoint de PDS.
 - [x] README registra a necessidade de uma decisão/migração de endpoint antes de produção.
+
+
+### Revisão Etapa 3.1 — Correções antes do uso
+- [x] Corrigidos escapes indevidos no `scripts/media-transport-test.sh`.
+- [x] Corrigida a ajuda do `scripts/media.sh` para mostrar `test [MB]`.
+- [ ] Ainda falta executar o teste no servidor doméstico; portanto o transporte >100 MB continua não comprovado.
