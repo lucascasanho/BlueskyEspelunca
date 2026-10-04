@@ -139,3 +139,12 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 - `29e4b5bbdd52c92f59e66e22ba9ea7011be36d95` — comando de administração
 - `958bbdbb7b7a1c095ba44bcf3122d4573abae2fc` — teste de transporte
 - `3a1a52124138f1d1a1e700b1bd1cd1763f08ce9d` — documentação
+
+
+### Etapa 3.2 — Primeiro teste executado
+- [x] Tailscale Funnel iniciou corretamente no primeiro teste, usando `lucas-2.taild078e5.ts.net:8443`.
+- [x] O teste chegou à fase de envio de 101 MB.
+- [x] Identificado erro local no cálculo de duração via `awk`; não houve evidência de falha de transporte nessa execução.
+- [x] Corrigido o cálculo de duração em `scripts/media-transport-test.sh`.
+- [ ] Reexecutar `bluesky media test 101`.
+- [ ] Reexecutar `bluesky media test 276`.
