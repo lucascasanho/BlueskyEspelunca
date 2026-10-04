@@ -15,6 +15,7 @@ Uso:
   bluesky tunnel
   bluesky account
   bluesky feed <comando>
+  bluesky media <comando>
 
 Comandos:
   update   Atualiza este repositório e aplica a atualização do BlueskyEspelunca.
@@ -35,6 +36,14 @@ Feed Espelunca:
   feed publish    Publica o registro do Feed no Bluesky.
   feed seed       Preenche a fila com posts recentes.
   feed tunnel     Configura a rota do Feed no Cloudflare Tunnel.
+
+Gateway de mídia via Tailscale:
+  media install     Instala o gateway local de uploadBlob.
+  media status      Mostra gateway, Tailscale e Funnel.
+  media funnel      Publica o gateway pelo Tailscale Funnel.
+  media funnel-off  Desativa o Funnel HTTPS 443 deste gateway.
+  media url         Mostra o hostname público do Tailscale.
+  media logs        Mostra logs de acesso do gateway.
 EOF
 }
 
@@ -81,6 +90,9 @@ case "${command}" in
     ;;
   feed)
     exec "${ROOT_DIR}/scripts/feed.sh" "${@:2}"
+    ;;
+  media)
+    bash "${ROOT_DIR}/scripts/media.sh" "${@:2}"
     ;;
   ""|-h|--help|help)
     usage
