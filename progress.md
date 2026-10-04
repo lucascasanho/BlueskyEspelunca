@@ -284,3 +284,13 @@ Objetivo solicitado: manter uploads menores que 100 MB no caminho atual via Clou
 Nenhuma alteração de produção, DID, PLC, `PDS_HOSTNAME`, rota principal do Cloudflare ou serviço oficial de vídeo será feita somente com base no teste de transporte. Primeiro precisamos provar o fluxo AT Protocol completo.
 
 Commit deste checkpoint: será registrado no commit desta atualização do `progress.md`.
+
+
+### Etapa 3.12 — Segundo upload externo grande comprovado — 2026-10-04
+- [x] iPhone em rede 5G enviou um segundo arquivo real pelo Funnel.
+- [x] Bytes recebidos no servidor: `247959574`.
+- [x] `Content-Length`: `247959574`.
+- [x] Resultado: `TESTE EXTERNO DE TRANSPORTE: OK`.
+- [x] Comprovados uploads externos reais de aproximadamente 165,8 MB e 248,0 MB pelo Tailscale Funnel.
+- [ ] Ainda falta provar o fluxo oficial de vídeo do Bluesky usando a rota alternativa.
+- [ ] Ainda não implementar a regra por tamanho em produção.
