@@ -210,3 +210,12 @@ Commit da correção:
 - [ ] Ainda falta determinar se um POST mínimo chega ao backend pelo Funnel.
 - [ ] Não repetir testes de 100–276 MB até o POST de 1 KB funcionar.
 - Commit: `f9db54600a3d6e85d1647310095a2f74ae69533c`.
+
+
+### Etapa 3.7 — Correção de inicialização do teste — 2026-10-04
+- [x] Identificada a causa do `ERRO: servidor de teste não iniciou`: chaves JavaScript não escapadas dentro do `f-string` Python da página HTML.
+- [x] Corrigido o HTML embutido em `scripts/media-external-test-server.sh`.
+- [x] Adicionada validação com `python3 -m py_compile` antes de iniciar o servidor.
+- [x] Em caso de falha futura, o script agora mostra o erro de sintaxe/log em vez de apenas informar que o servidor não iniciou.
+- [ ] Ainda falta executar o teste externo de 1 KB.
+- Commit: `f68fa81a95c537569944ed74d3cc55eb10eb7902`.
