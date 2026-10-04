@@ -45,11 +45,13 @@ if [[ ! -f "${PWA_DIR}/manifest.json" || ! -f "${PWA_DIR}/sw.js" ]]; then
   exit 1
 fi
 
-mkdir -p dist/icons
+mkdir -p dist/icons dist/screenshots
 cp "${PWA_DIR}/manifest.json" dist/manifest.json
 cp "${PWA_DIR}/icons/icon-96.png" dist/icons/icon-96.png
 cp "${PWA_DIR}/icons/icon-192.png" dist/icons/icon-192.png
 cp "${PWA_DIR}/icons/icon-512.png" dist/icons/icon-512.png
+cp "${ROOT_DIR}/desktop-home.png" dist/screenshots/desktop-home.png
+cp "${ROOT_DIR}/mobile-home.png" dist/screenshots/mobile-home.png
 cp "${PWA_DIR}/sw.js" dist/sw.js
 
 python3 - <<'PY'
