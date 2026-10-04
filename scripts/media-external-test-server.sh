@@ -114,34 +114,34 @@ const pingButton = document.getElementById('ping');
 const button = document.getElementById('send');
 const out = document.getElementById('out');
 
-pingButton.addEventListener('click', async () => {
+pingButton.addEventListener('click', async () => {{
   pingButton.disabled = true;
   button.disabled = true;
   const body = new Uint8Array(1024);
   for (let i = 0; i < body.length; i++) body[i] = i % 256;
   out.textContent = 'Enviando exatamente 1.024 bytes...';
 
-  try {
-    const response = await fetch('/upload-test', {
+  try {{
+    const response = await fetch('/upload-test', {{
       method: 'POST',
-      headers: {'Content-Type': 'application/octet-stream'},
+      headers: {{'Content-Type': 'application/octet-stream'}},
       body
-    });
+    }});
     out.textContent = 'HTTP ' + response.status + '\\n' + await response.text();
-  } catch (error) {
+  }} catch (error) {{
     out.textContent = 'Falha de rede: ' + error;
-  } finally {
+  }} finally {{
     pingButton.disabled = false;
     button.disabled = false;
-  }
-});
+  }}
+}});
 
-button.addEventListener('click', () => {{
+button.addEventListener('click', () => {{{{
   const file = fileInput.files && fileInput.files[0];
-  if (!file) {{
+  if (!file) {{{{
     out.textContent = 'Selecione um arquivo primeiro.';
     return;
-  }}
+  }}}}
 
   button.disabled = true;
   out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\\n';
@@ -150,29 +150,29 @@ button.addEventListener('click', () => {{
   xhr.open('POST', '/upload-test', true);
   xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
 
-  xhr.upload.onprogress = (event) => {{
-    if (event.lengthComputable) {{
+  xhr.upload.onprogress = (event) => {{{{
+    if (event.lengthComputable) {{{{
       const pct = ((event.loaded / event.total) * 100).toFixed(1);
       out.textContent = 'Enviando: ' + pct + '%\\n'
         + event.loaded.toLocaleString('pt-BR') + ' / '
         + event.total.toLocaleString('pt-BR') + ' bytes';
-    }} else {{
+    }}}} else {{{{
       out.textContent = 'Enviando: ' + event.loaded.toLocaleString('pt-BR') + ' bytes';
-    }}
-  }};
+    }}}}
+  }}}};
 
-  xhr.onload = () => {{
+  xhr.onload = () => {{{{
     out.textContent = 'HTTP ' + xhr.status + '\\n' + xhr.responseText;
     button.disabled = false;
-  }};
+  }}}};
 
-  xhr.onerror = () => {{
+  xhr.onerror = () => {{{{
     out.textContent = 'Falha de rede durante o POST.';
     button.disabled = false;
-  }};
+  }}}};
 
   xhr.send(file);
-}});
+}}}});
 </script>
 </body>
 </html>"""
@@ -265,6 +265,13 @@ HTTPServer(("127.0.0.1", port), Handler).serve_forever()
 PY
 
 export TEST_PORT EXPECTED MIN_BYTES="${MIN_BYTES}" RESULT_PATH="${RESULT}" SERVER_LOG="${LOG}"
+
+if ! python3 -m py_compile "${SERVER_SCRIPT}" 2>"${WORK_DIR}/python-error.log"; then
+  echo "ERRO: servidor Python de teste inválido:"
+  cat "${WORK_DIR}/python-error.log"
+  exit 1
+fi
+
 python3 "${SERVER_SCRIPT}" >/dev/null 2>&1 &
 SERVER_PID="$!"
 
@@ -275,6 +282,8 @@ done
 
 if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
   echo "ERRO: servidor de teste não iniciou."
+  echo "Log do servidor:"
+  cat "${LOG}" 2>/dev/null || true
   exit 1
 fi
 
