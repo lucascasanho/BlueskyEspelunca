@@ -82,7 +82,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         return True
     def do_GET(self):
-        if self.path != "/":
+        if self.path not in ("/", "/upload-test"):
             self.send_response(404)
             self.end_headers()
             return
@@ -92,7 +92,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             target = f"Expected minimum upload: {minimum_bytes} bytes"
 
-        html = f"""<!doctype html>
+        html = """<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -101,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
 </head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:760px;margin:40px auto;padding:0 16px">
 <h1>Espelunca media transport test</h1>
-<p>{target}</p>
+<p>__TARGET__</p>
 <p>Esta página envia o arquivo diretamente por POST a partir desta conexão.</p>
 <input id="file" type="file">
 <br><br>
@@ -114,68 +114,70 @@ const pingButton = document.getElementById('ping');
 const button = document.getElementById('send');
 const out = document.getElementById('out');
 
-pingButton.addEventListener('click', async () => {{
+pingButton.addEventListener('click', async () => {
   pingButton.disabled = true;
   button.disabled = true;
   const body = new Uint8Array(1024);
   for (let i = 0; i < body.length; i++) body[i] = i % 256;
   out.textContent = 'Enviando exatamente 1.024 bytes...';
 
-  try {{
-    const response = await fetch('/upload-test', {{
+  try {
+    const response = await fetch('/upload-test', {
       method: 'POST',
-      headers: {{'Content-Type': 'application/octet-stream'}},
+      headers: {'Content-Type': 'application/octet-stream'},
       body
-    }});
-    out.textContent = 'HTTP ' + response.status + '\\n' + await response.text();
-  }} catch (error) {{
+    });
+    out.textContent = 'HTTP ' + response.status + '\n' + await response.text();
+  } catch (error) {
     out.textContent = 'Falha de rede: ' + error;
-  }} finally {{
+  } finally {
     pingButton.disabled = false;
     button.disabled = false;
-  }}
-}});
+  }
+});
 
-button.addEventListener('click', () => {{{{
+button.addEventListener('click', () => {
   const file = fileInput.files && fileInput.files[0];
-  if (!file) {{{{
+  if (!file) {
     out.textContent = 'Selecione um arquivo primeiro.';
     return;
-  }}}}
+  }
 
   button.disabled = true;
-  out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\\n';
+  out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\n';
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/upload-test', true);
   xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
 
-  xhr.upload.onprogress = (event) => {{{{
-    if (event.lengthComputable) {{{{
+  xhr.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
       const pct = ((event.loaded / event.total) * 100).toFixed(1);
-      out.textContent = 'Enviando: ' + pct + '%\\n'
+      out.textContent = 'Enviando: ' + pct + '%\n'
         + event.loaded.toLocaleString('pt-BR') + ' / '
         + event.total.toLocaleString('pt-BR') + ' bytes';
-    }}}} else {{{{
+    } else {
       out.textContent = 'Enviando: ' + event.loaded.toLocaleString('pt-BR') + ' bytes';
-    }}}}
-  }}}};
+    }
+  };
 
-  xhr.onload = () => {{{{
-    out.textContent = 'HTTP ' + xhr.status + '\\n' + xhr.responseText;
+  xhr.onload = () => {
+    out.textContent = 'HTTP ' + xhr.status + '\n' + xhr.responseText;
     button.disabled = false;
-  }}}};
+  };
 
-  xhr.onerror = () => {{{{
+  xhr.onerror = () => {
     out.textContent = 'Falha de rede durante o POST.';
     button.disabled = false;
-  }}}};
+  };
 
   xhr.send(file);
-}}}});
+});
 </script>
 </body>
 </html>"""
+        html = html.replace("__TARGET__", target)
+
 
         body = html.encode()
         self.send_response(200)
@@ -300,7 +302,11 @@ if [[ "$SIZE_ARG" == "auto" ]]; then
 else
   echo "Tamanho esperado: ${EXPECTED} bytes (${SIZE_ARG} MB)"
 fi
-echo "URL: ${URL}"
+PAGE_URL="https://${DNS_NAME}:${FUNNEL_PORT}/"
+echo "Página de teste: ${PAGE_URL}"
+echo "Endpoint POST:   ${URL}"
+echo
+echo "Abra a PÁGINA de teste no Safari. O botão fica nela."
 echo
 echo "Exemplo em outro computador:"
 echo "  curl --data-binary \"@ARQUIVO\" \"${URL}\""
