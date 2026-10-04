@@ -127,7 +127,7 @@ pingButton.addEventListener('click', async () => {
       headers: {'Content-Type': 'application/octet-stream'},
       body
     });
-    out.textContent = 'HTTP ' + response.status + '\n' + await response.text();
+    out.textContent = 'HTTP ' + response.status + '\\n' + await response.text();
   } catch (error) {
     out.textContent = 'Falha de rede: ' + error;
   } finally {
@@ -144,7 +144,7 @@ button.addEventListener('click', () => {
   }
 
   button.disabled = true;
-  out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\n';
+  out.textContent = 'Enviando ' + file.size.toLocaleString('pt-BR') + ' bytes...\\n';
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/upload-test', true);
@@ -153,8 +153,8 @@ button.addEventListener('click', () => {
   xhr.upload.onprogress = (event) => {
     if (event.lengthComputable) {
       const pct = ((event.loaded / event.total) * 100).toFixed(1);
-      out.textContent = 'Enviando: ' + pct + '%\n'
-        + event.loaded.toLocaleString('pt-BR') + ' / '
+      out.textContent = 'Enviando: ' + pct + '%\\n'
+         + event.loaded.toLocaleString('pt-BR') + ' / '
         + event.total.toLocaleString('pt-BR') + ' bytes';
     } else {
       out.textContent = 'Enviando: ' + event.loaded.toLocaleString('pt-BR') + ' bytes';
@@ -162,7 +162,7 @@ button.addEventListener('click', () => {
   };
 
   xhr.onload = () => {
-    out.textContent = 'HTTP ' + xhr.status + '\n' + xhr.responseText;
+    out.textContent = 'HTTP ' + xhr.status + '\\n' + xhr.responseText;
     button.disabled = false;
   };
 
