@@ -686,6 +686,12 @@ for name, source in [
         raise SystemExit(f"Validação falhou: Video voltou ao conjunto padrão de {name}.")
     if "TIMELINE_SAVED_FEED" not in source or "DISCOVER_SAVED_FEED" not in source:
         raise SystemExit(f"Validação falhou: {name} perdeu os feeds padrão esperados.")
+    canonical_order = re.compile(
+        r"TIMELINE_SAVED_FEED.*ESPELUNCA_BR_FEED_URI.*DISCOVER_SAVED_FEED",
+        re.DOTALL,
+    )
+    if not canonical_order.search(source):
+        raise SystemExit(f"Validação falhou: {name} não está na ordem Seguindo → Espelunca BR → Discover.")
 
 if "ESPELUNCA_BR_FEED_URI" not in feed_query_check:
     raise SystemExit("Validação falhou: feed query não contém o Feed Espelunca BR.")
