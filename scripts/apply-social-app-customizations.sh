@@ -390,15 +390,11 @@ welcome_modal.write_text(text)
 # New accounts should follow the Espelunca profile instead of the Bluesky account.
 step_finished = Path("src/screens/Onboarding/StepFinished/index.tsx")
 text = step_finished.read_text()
-text = text.replace(
-    """  BSKY_APP_ACCOUNT_DID,
-  DISCOVER_SAVED_FEED,
-  TIMELINE_SAVED_FEED,
-  VIDEO_SAVED_FEED,""",
-    """  ESPELUNCA_BR_FEED_URI,
-  DISCOVER_SAVED_FEED,
-  TIMELINE_SAVED_FEED,""",
-    1,
+text = re.sub(
+    r"(?m)^  (?:BSKY_APP_ACCOUNT_DID|ESPELUNCA_BR_FEED_URI),\n  DISCOVER_SAVED_FEED,\n  TIMELINE_SAVED_FEED,\n(?:  VIDEO_SAVED_FEED,\n)?",
+    "  ESPELUNCA_BR_FEED_URI,\n  DISCOVER_SAVED_FEED,\n  TIMELINE_SAVED_FEED,\n",
+    text,
+    count=1,
 )
 text = text.replace(
     "import {app} from '#/lexicons'",
