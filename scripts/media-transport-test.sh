@@ -155,7 +155,7 @@ HTTP_CODE="$(
 )"
 END_NS="$(date +%s%N)"
 ELAPSED_NS=$((END_NS - START_NS))
-ELAPSED_SEC="$(awk "BEGIN {printf \\"%.2f\\", ${ELAPSED_NS}/1000000000}")"
+ELAPSED_SEC="$(awk -v ns="${ELAPSED_NS}" 'BEGIN {printf "%.2f", ns/1000000000}')"
 
 if [[ "${HTTP_CODE}" != "200" ]]; then
   echo "ERRO: HTTP ${HTTP_CODE}"
