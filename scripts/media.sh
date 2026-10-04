@@ -36,7 +36,9 @@ Comandos:
   status        Mostra gateway, Tailscale e Funnel.
   funnel        Publica o gateway no Funnel, em HTTPS 443.
   funnel-off    Remove o Funnel de HTTPS 443 deste gateway.
-  test [MB]     Testa transporte de corpo grande pelo Funnel (padrão 101 MB).
+  test [MB]     Teste local de transporte (não prova entrada externa).
+  test-external [MB]
+                  Inicia um teste que deve receber o upload de OUTRA rede.
   inspect ID    Mostra DID/PLC e o endpoint Tailscale sem alterar nada.
   url           Mostra o hostname público do Tailscale.
   logs          Mostra as últimas requisições do nginx.
@@ -109,6 +111,9 @@ case "${1:-}" in
     ;;
   test)
     bash "${ROOT_DIR}/scripts/media-transport-test.sh" "${2:-101}"
+    ;;
+  test-external)
+    bash "${ROOT_DIR}/scripts/media-external-test-server.sh" "${2:-101}"
     ;;
   inspect)
     bash "${ROOT_DIR}/scripts/media-inspect.sh" "${2:-}"
