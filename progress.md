@@ -82,3 +82,9 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] O teste gera arquivo esparso temporário, envia por HTTP e confere exatamente quantos bytes chegaram ao servidor doméstico.
 - [x] O arquivo de teste é apagado ao final.
 - [x] O teste não altera DID, PLC, `PDS_HOSTNAME` ou Cloudflare.
+
+
+### Etapa 3.1 — Teste integrado ao comando
+- [x] `bluesky media test [MB]` adicionado.
+- [x] Instalação do gateway passou a usar `bash` explicitamente, sem depender de permissões executáveis do GitHub Contents API.
+- [x] Teste padrão definido em 101 MB para ultrapassar o limite atual de 100 MB; 276 MB pode ser solicitado com `bluesky media test 276`.
