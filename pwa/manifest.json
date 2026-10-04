@@ -49,5 +49,20 @@
       "type": "image/png",
       "purpose": "any"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-home.png",
+      "sizes": "1902x938",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Espelunca no desktop"
+    },
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "479x906",
+      "type": "image/png",
+      "label": "Espelunca no celular"
+    }
   ]
 }
