@@ -319,3 +319,15 @@ Commit deste checkpoint: será registrado no commit desta atualização do `prog
 
 #### Commit
 - f75911688028468e71bdc99111c3abe4a521a781 — aplica o workaround de recalibração do viewport para PWA iOS.
+
+
+### Etapa PWA iOS — diagnóstico do zoom na tela de credenciais — 2026-10-04
+- [x] Isolado que o mini zoom aparece ao entrar na tela de credenciais, e não na página pública inicial.
+- [x] Identificada a causa mais provável no fluxo upstream: o `TextField.Input` usa `a.text_md), cujo tamanho tipográfico é 15px, enquanto a tela de login usa foco automático no campo de usuário no Web.
+- [x] Aplicada correção somente ao Web: os campos `loginUsernameInput`, `loginPasswordInput` e `loginAuthFactorTokenInput` passam a usar `fontSize: 16` para evitar o zoom automático do Safari ao focar inputs.
+- [x] A alteração foi colocada em `scripts/apply-social-app-customizations.sh`, para sobreviver à atualização do `social-app` upstream.
+- [ ] Rebuildar o Web, reiniciar o serviço e testar novamente no PWA instalado no iPhone 14 com iOS 27.
+- [ ] Confirmar que o mini zoom desaparece já ao abrir a tela de credenciais e que a rolagem horizontal não reaparece.
+
+#### Commit
+- `ab6f4e32d197ba416f8b9083b237f10887a66d9c` — corrige o font-size dos campos de login no Web para evitar zoom automático no Safari.
