@@ -59,7 +59,7 @@ get_dns_name() {
 
 case "${1:-}" in
   install)
-    exec "${ROOT_DIR}/scripts/install-media-gateway.sh"
+    bash "${ROOT_DIR}/scripts/install-media-gateway.sh"
     ;;
   status)
     echo "=== Gateway de mídia ==="
@@ -104,6 +104,9 @@ case "${1:-}" in
     ;;
   logs)
     "${SUDO}" tail -n 100 /var/log/nginx/access.log || true
+    ;;
+  test)
+    bash "${ROOT_DIR}/scripts/media-transport-test.sh" "${2:-101}"
     ;;
   ""|-h|--help|help)
     usage
