@@ -51,3 +51,10 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] Nginx configurado com `proxy_request_buffering off`, evitando guardar o corpo do upload em disco como etapa intermediária.
 - [x] Limite local configurável, padrão 500 MB, alinhado ao limite atual do PDS.
 - [x] Script instala Tailscale, mas não ativa o Funnel automaticamente nesta fase.
+
+
+### Etapa 2.1 — Comando de administração
+- [x] `scripts/media.sh` criado.
+- [x] Comandos previstos: `install`, `status`, `funnel`, `funnel-off`, `url`, `logs`.
+- [x] O Funnel não é ativado automaticamente durante a instalação.
+- [x] A publicação pública usa HTTPS 443 e o hostname `*.ts.net` fornecido pelo Tailscale.
