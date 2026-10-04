@@ -306,3 +306,16 @@ Commit deste checkpoint: será registrado no commit desta atualização do `prog
 #### Commits
 - 4601df99cf8ddc5dc5fac98f8a80d58856a52538 — primeira gravação da correção do PWA iOS; continha um erro no comentário do bloco Python e foi corrigida antes do uso.
 - 2496336657fc49c0bb2f94e4b1ce4dcc569a825a — versão corrigida e final da alteração.
+
+
+### Etapa PWA iOS — segunda correção — 2026-10-04
+- [x] A primeira correção de CSS não resolveu o sintoma no iPhone 14 com iOS 27.
+- [x] Identificado o WebKit Bug 262207, ainda reproduzido em iOS 27, no qual PWAs standalone podem perder as restrições do viewport e retornar a um viewport virtual largo, causando aparência de zoom e reavaliação incorreta do layout.
+- [x] O arquivo scripts/build-web.sh agora injeta um workaround de recalibração do viewport específico para PWA standalone no iOS/WebKit.
+- [x] A rotina compara window.innerWidth com visualViewport.width; quando há divergência significativa, troca temporariamente a meta viewport para width=device-width, initial-scale=1, maximum-scale=1 e restaura a configuração canônica com viewport-fit=cover, disparando um novo evento de resize.
+- [x] A rotina é executada no carregamento, pageshow, resize e retorno de visibilitychange, cobrindo também o caso em que o PWA volta do segundo plano.
+- [x] A correção continua limitada ao PWA standalone no WebKit e não altera Android/Chrome.
+- [ ] Reinstalar novamente o PWA no iPhone 14 e validar se desaparecem o mini zoom e a rolagem horizontal.
+
+#### Commit
+- f75911688028468e71bdc99111c3abe4a521a781 — aplica o workaround de recalibração do viewport para PWA iOS.
