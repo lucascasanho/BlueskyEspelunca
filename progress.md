@@ -58,3 +58,10 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] Comandos previstos: `install`, `status`, `funnel`, `funnel-off`, `url`, `logs`.
 - [x] O Funnel não é ativado automaticamente durante a instalação.
 - [x] A publicação pública usa HTTPS 443 e o hostname `*.ts.net` fornecido pelo Tailscale.
+
+
+### Etapa 2.2 — Configuração versionada
+- [x] `config.env.example` recebeu parâmetros do gateway de mídia.
+- [x] Porta local padrão: `3190`.
+- [x] Limite de corpo padrão: `500m`.
+- [x] Caminho do arquivo de configuração Nginx ficou configurável.
