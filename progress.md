@@ -192,3 +192,12 @@ Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O 
 
 Commit da correção:
 - `40224e930c2f3c15c03f04c67ad936364fdb1fe8` — corrige o servidor de teste para POSTs do iPhone e adiciona modo de tamanho automático.
+
+
+### Etapa 3.5 — Upload externo via navegador — 2026-10-04
+- [x] Identificado que o Atalhos do iPhone alcança o endpoint externo, mas os testes de arquivo chegam ao servidor com corpo de 0 bytes.
+- [x] Adicionada página HTML temporária ao `scripts/media-external-test-server.sh` com seletor de arquivo e envio via `XMLHttpRequest`/POST direto, evitando o mecanismo de `Request Body: File` do Atalhos.
+- [x] A página mostra progresso do upload no Safari e a resposta HTTP do servidor.
+- [ ] Ainda não comprovar o envio de arquivo grande externamente.
+- [ ] Nenhuma alteração de DID, PLC, PDS ou Cloudflare.
+- Commit: `bd63775285af8235a67531b69f5b1a606d4b3b9c`.
