@@ -11,6 +11,11 @@ set +a
 
 cd "${APP_DIR}"
 
+# Cada build deve começar do código upstream limpo. As customizações deste
+# repositório são reaplicadas abaixo e não devem se acumular entre builds.
+echo "==> Restaurando social-app para o HEAD atual"
+git reset --hard HEAD >/dev/null
+
 echo "==> Aplicando customizações versionadas do BlueskyEspelunca"
 
 PATCH_DIR="${ROOT_DIR}/patches/social-app"
