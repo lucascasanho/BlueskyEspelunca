@@ -411,7 +411,7 @@ follow_pattern = re.compile(
     re.DOTALL,
 )
 follow_replacement = """    let espeluncaDid: string | undefined
-    try:
+    try {
       const resolved = await pdsClient.call(com.atproto.identity.resolveHandle, {
         handle: 'espelunca.blue',
       })
