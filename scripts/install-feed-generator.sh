@@ -21,7 +21,7 @@ FEED_ENV_FILE="${FEEDGEN_ENV_FILE:-${INSTALL_DIR}/feed.env}"
 FEED_SERVICE="${FEEDGEN_SERVICE:-espelunca-bluesky-feed.service}"
 FEED_DID="${FEEDGEN_SERVICE_DID:-did:web:${FEED_HOST}}"
 FEED_RECORD="${FEEDGEN_RECORD_NAME:-espelunca-br}"
-FEED_NAME="${FEEDGEN_DISPLAY_NAME:-Espelunca BR}"
+FEED_NAME="${FEEDGEN_DISPLAY_NAME:-Espelunca}"
 FEED_DESCRIPTION="${FEEDGEN_DESCRIPTION:-Feed em PT-BR da Espelunca.blue.}"
 EXISTING_PUBLISHER_DID=""
 if [[ -f "${FEED_ENV_FILE}" ]]; then
@@ -104,7 +104,7 @@ if ! curl -fsS --max-time 10 "http://127.0.0.1:${FEED_PORT}/health" >/dev/null; 
 fi
 
 echo
-echo "Feed Espelunca BR instalado."
+echo "Feed Espelunca instalado."
 echo "Serviço: ${FEED_SERVICE}"
 echo "Local: http://127.0.0.1:${FEED_PORT}"
 echo "Público: https://${FEED_HOST}"
