@@ -12,11 +12,11 @@ Objetivo: investigar e preparar uma rota alternativa para uploads grandes do Blu
 - [x] Fluxo oficial de vídeo do social-app verificado: cliente envia ao `video.bsky.app`; o serviço de vídeo posteriormente chama `com.atproto.repo.uploadBlob` no PDS.
 - [x] Tailscale Funnel verificado: pode publicar um serviço local sem port forwarding, usando um hostname `*.ts.net`.
 - [ ] Provar experimentalmente o transporte de um upload >100 MB pelo Funnel.
-- [ ] Criar gateway local de mídia com buffering desativado, para não armazenar os vídeos em disco.
-- [ ] Criar comando simples de instalação/diagnóstico.
+- [x] Criar gateway local de mídia com buffering desativado, para não armazenar os vídeos em disco.
+- [x] Criar comando simples de instalação/diagnóstico.
 - [ ] Determinar, com teste real, se o fluxo oficial `video.bsky.app → PDS` pode usar o endpoint alternativo sem alterar a identidade das contas.
 - [ ] Só conectar o gateway ao caminho de produção depois de comprovar compatibilidade.
-- [ ] Atualizar README e documentação operacional.
+- [x] Atualizar README e documentação operacional.
 - [ ] Validar instalação idempotente e reversível.
 
 ## Decisão técnica provisória
@@ -100,3 +100,42 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 - [x] Corrigidos escapes indevidos no `scripts/media-transport-test.sh`.
 - [x] Corrigida a ajuda do `scripts/media.sh` para mostrar `test [MB]`.
 - [ ] Ainda falta executar o teste no servidor doméstico; portanto o transporte >100 MB continua não comprovado.
+
+
+## Ponto de parada seguro — 2026-10-04
+A fase de preparação terminou. O repositório contém a implementação experimental, mas nenhuma alteração de produção foi feita no PDS, DID, PLC ou Cloudflare.
+
+### Arquivos versionados da fase de teste
+- `docs/media-upload/tailscale-research.md`
+- `scripts/install-media-gateway.sh`
+- `scripts/media.sh`
+- `scripts/media-transport-test.sh`
+- `config.env.example`
+- `bluesky`
+- `README.md`
+
+### Próximo comando no servidor doméstico
+```bash
+bluesky update
+bluesky media install
+sudo tailscale up
+bluesky media test 101
+```
+
+Depois do teste de 101 MB:
+```bash
+bluesky media test 276
+```
+
+### Critério para avançar
+Só marcar o transporte como concluído se o servidor de teste receber exatamente o número de bytes enviado.
+
+Depois disso, ainda será necessário provar o fluxo `video.bsky.app -> PDS`. O gateway Tailscale não será ligado ao fluxo oficial de produção até essa compatibilidade ser demonstrada.
+
+### Commits importantes
+- `f4e4c00d90c5714908dd34ae83d9e40107dc292d` — cria `progress.md`
+- `d6a41683e4ec424059e1f1c2d8238632f98c3717` — pesquisa técnica
+- `9602c98ef37497d9896aa3adc3169b6aa4d78487` — instalador do gateway
+- `29e4b5bbdd52c92f59e66e22ba9ea7011be36d95` — comando de administração
+- `958bbdbb7b7a1c095ba44bcf3122d4573abae2fc` — teste de transporte
+- `3a1a52124138f1d1a1e700b1bd1cd1763f08ce9d` — documentação
