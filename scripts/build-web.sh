@@ -52,21 +52,36 @@ fi
 mkdir -p dist/icons dist/screenshots
 
 # Generate the normal PWA icons as rounded blue app tiles with the white Espelunca mark.
+# Rasterize all PWA icons as standard 8-bit PNGs. Keep the normal icon large enough to match the source mark;
+# keep the maskable variant inside the standardized safe area so platform masks do not clip the logo.
 for size in 96 192 512; do
   magick -background none \
     "$PWA_DIR/icons/icon-any.svg" \
     -resize "${size}x${size}" \
+    -depth 8 \
     -define png:color-type=6 \
+    -strip \
     "dist/icons/icon-${size}.png"
 done
 
-# Generate dedicated maskable icons with an opaque background and generous safe-zone padding.
 for size in 192 512; do
   magick -background none \
     "$PWA_DIR/icons/icon-maskable.svg" \
     -resize "${size}x${size}" \
+    -depth 8 \
     -define png:color-type=6 \
+    -strip \
     "dist/icons/icon-${size}-maskable.png"
+done
+
+# Fail the build if any generated icon is not square or is not 8-bit.
+for file in dist/icons/*.png; do
+  info="$(magick identify -format "%w %h %[depth]" "$file")"
+  read -r width height depth <<< "$info"
+  if [[ "$width" != "$height" || "$depth" != "8" ]]; then
+    echo "ERRO: ícone PWA inválido: $file ($info)"
+    exit 1
+  fi
 done
 
 cp "$PWA_DIR/manifest.json" dist/manifest.json
