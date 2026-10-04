@@ -74,3 +74,11 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 
 ### Etapa 2.4 — Dependências
 - [x] Instalador atualizado para incluir `jq` e `python3`, usados pelo diagnóstico/teste.
+
+
+### Etapa 3 — Teste de transporte
+- [x] `scripts/media-transport-test.sh` criado.
+- [x] Teste usa Funnel HTTPS 8443/10000 temporário, sem mexer na porta 443 de produção.
+- [x] O teste gera arquivo esparso temporário, envia por HTTP e confere exatamente quantos bytes chegaram ao servidor doméstico.
+- [x] O arquivo de teste é apagado ao final.
+- [x] O teste não altera DID, PLC, `PDS_HOSTNAME` ou Cloudflare.
