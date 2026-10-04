@@ -351,12 +351,24 @@ replace_path_d(
 
 def replace_static_splash(path: Path, label: str) -> None:
     text = path.read_text()
-    text = text.replace("<!-- Bluesky SVG -->", "<!-- Espelunca SVG -->", 1)
-    pattern = r'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 57"><path fill="#006AFF" d="[^"]+"/></svg>'
     replacement = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="#006AFF" d="' + icon_d + '"/></svg>'
-    text, count = re.subn(pattern, replacement, text, count=1)
+
+    # Idempotent: if this file was already branded by a previous partial build,
+    # leave the existing Espelunca splash untouched.
+    if icon_d in text and "viewBox=\"0 0 640 640\"" in text:
+        return
+
+    # Current upstream splash markup.
+    splash_pattern = r'(<div id="splash">\s*)(?:<!--.*?-->\s*)?<svg\b.*?</svg>'
+    text, count = re.subn(
+        splash_pattern,
+        lambda m: m.group(1) + "<!-- Espelunca SVG -->\n    " + replacement,
+        text,
+        count=1,
+        flags=re.DOTALL,
+    )
     if count != 1:
-        raise SystemExit(f"Não foi possível substituir o splash estático em {label}.")
+        raise SystemExit(f"Não foi possível localizar o splash estático em {label}.")
     path.write_text(text)
 
 replace_static_splash(Path("public/index.html"), "public/index.html")
