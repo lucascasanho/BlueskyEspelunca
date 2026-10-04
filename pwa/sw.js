@@ -1,4 +1,4 @@
-const CACHE_NAME = 'espelunca-pwa-v4'
+const CACHE_NAME = 'espelunca-pwa-v5'
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -6,6 +6,8 @@ const SHELL_URLS = [
   '/icons/icon-96.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/screenshots/desktop-home.png',
+  '/screenshots/mobile-home.png',
   '/espelunca-icon.svg',
 ]
 
