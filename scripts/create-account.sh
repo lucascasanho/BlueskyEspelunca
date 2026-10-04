@@ -16,6 +16,7 @@ echo "Criando conta ${FULL_HANDLE}..."
 
 sudo docker exec -e PDS_ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
   pds goat pds admin account create \
+  --pds-host "http://127.0.0.1:${PDS_PORT}" \
   --handle "${FULL_HANDLE}" \
   --email "${EMAIL}" \
   --password "${PASSWORD}"
