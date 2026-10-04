@@ -201,3 +201,12 @@ Commit da correção:
 - [ ] Ainda não comprovar o envio de arquivo grande externamente.
 - [ ] Nenhuma alteração de DID, PLC, PDS ou Cloudflare.
 - Commit: `bd63775285af8235a67531b69f5b1a606d4b3b9c`.
+
+
+### Etapa 3.6 — Diagnóstico mínimo de POST — 2026-10-04
+- [x] Adicionado botão `Testar POST de 1 KB` à página temporária do teste externo.
+- [x] O teste gera exatamente 1.024 bytes no JavaScript, sem depender de Arquivos, Fotos ou seleção de mídia do iPhone.
+- [x] A resposta agora registra `Content-Length`, `Transfer-Encoding`, `Content-Type` e `User-Agent`.
+- [ ] Ainda falta determinar se um POST mínimo chega ao backend pelo Funnel.
+- [ ] Não repetir testes de 100–276 MB até o POST de 1 KB funcionar.
+- Commit: `f9db54600a3d6e85d1647310095a2f74ae69533c`.
