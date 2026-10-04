@@ -35,3 +35,10 @@ Toda alteração de arquivo deve ser seguida por um commit que registre a altera
 
 ### Commit inicial
 - Este arquivo criado para ser a fonte persistente do progresso.
+
+
+### Etapa 1 — Pesquisa técnica
+- [x] Arquivo `docs/media-upload/tailscale-research.md` criado.
+- [x] Registrado o fluxo oficial de vídeo e a dependência do DID Document para localizar o PDS.
+- [x] Registrada a limitação de que um segundo hostname `*.ts.net` não é automaticamente escolhido pelo `video.bsky.app`.
+- [x] Definido gateway local restrito ao endpoint `com.atproto.repo.uploadBlob`, sem armazenamento permanente.
