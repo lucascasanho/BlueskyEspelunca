@@ -47,11 +47,9 @@ fi
 
 mkdir -p dist/icons
 cp "${PWA_DIR}/manifest.json" dist/manifest.json
-cp "${PWA_DIR}/icons/icon-96.svg" dist/icons/icon-96.svg
+cp "${PWA_DIR}/icons/icon-96.png" dist/icons/icon-96.png
 cp "${PWA_DIR}/icons/icon-192.png" dist/icons/icon-192.png
 cp "${PWA_DIR}/icons/icon-512.png" dist/icons/icon-512.png
-cp "${PWA_DIR}/icons/icon-192-maskable.svg" dist/icons/icon-192-maskable.svg
-cp "${PWA_DIR}/icons/icon-512-maskable.svg" dist/icons/icon-512-maskable.svg
 cp "${PWA_DIR}/sw.js" dist/sw.js
 
 python3 - <<'PY'

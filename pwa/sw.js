@@ -1,13 +1,11 @@
-const CACHE_NAME = 'espelunca-pwa-v3'
+const CACHE_NAME = 'espelunca-pwa-v4'
 const SHELL_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-96.svg',
+  '/icons/icon-96.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
-  '/icons/icon-192-maskable.svg',
-  '/icons/icon-512-maskable.svg',
   '/espelunca-icon.svg',
 ]
 
