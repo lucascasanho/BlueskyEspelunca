@@ -331,3 +331,16 @@ Commit deste checkpoint: será registrado no commit desta atualização do `prog
 
 #### Commit
 - `ab6f4e32d197ba416f8b9083b237f10887a66d9c` — corrige o font-size dos campos de login no Web para evitar zoom automático no Safari.
+
+
+### Etapa PWA iOS — correção global após nova reprodução — 2026-10-04
+- [x] Reavaliado o diagnóstico após a reprodução também ocorrer na página inicial deslogada e nas configurações quando logado.
+- [x] Concluído que o problema não pode ser tratado somente como zoom de campo de formulário; o estado de viewport pode estar afetando o shell inteiro.
+- [x] O reparo global do PWA foi reforçado em `scripts/build-web.sh`: WebKit passa a usar `overflow-y: auto`, `overflow-x: clip`, largura limitada a 100% e `-webkit-text-size-adjust: 100%` no shell.
+- [x] A recuperação de viewport agora monitora simultaneamente salto anormal de `window.innerWidth`, retorno ao viewport legado, divergência com `visualViewport.width` e `visualViewport.scale > 1.01`.
+- [x] Um baseline de largura saudável é guardado durante a sessão para detectar quando o WebKit entra posteriormente no estado incorreto, inclusive após navegação/retorno ao PWA.
+- [x] O workaround mantém a troca temporária para `maximum-scale=1, user-scalable=no` somente durante a recalibração e depois restaura a meta viewport canônica.
+- [ ] Rebuildar, reiniciar e testar novamente o PWA no iPhone 14/iOS 27, verificando página inicial deslogada, login e configurações logado.
+
+#### Commit
+- `5a084dc8a4de9de45ddd2cbba6de0046a25d5e6d` — reforça a recuperação global de viewport do PWA iOS.
