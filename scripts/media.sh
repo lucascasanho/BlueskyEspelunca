@@ -37,6 +37,7 @@ Comandos:
   funnel        Publica o gateway no Funnel, em HTTPS 443.
   funnel-off    Remove o Funnel de HTTPS 443 deste gateway.
   test [MB]     Testa transporte de corpo grande pelo Funnel (padrão 101 MB).
+  inspect ID    Mostra DID/PLC e o endpoint Tailscale sem alterar nada.
   url           Mostra o hostname público do Tailscale.
   logs          Mostra as últimas requisições do nginx.
 EOF
@@ -108,6 +109,9 @@ case "${1:-}" in
     ;;
   test)
     bash "${ROOT_DIR}/scripts/media-transport-test.sh" "${2:-101}"
+    ;;
+  inspect)
+    bash "${ROOT_DIR}/scripts/media-inspect.sh" "${2:-}"
     ;;
   ""|-h|--help|help)
     usage
