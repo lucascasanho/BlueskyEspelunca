@@ -17,7 +17,7 @@ TEST_PORT="${MEDIA_TEST_PORT:-3191}"
 FUNNEL_PORT="${MEDIA_TEST_FUNNEL_PORT:-8443}"
 SIZE_MB="${1:-101}"
 
-if [[ "\$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
+if [[ "$(id -u)" -eq 0 ]]; then SUDO=; else SUDO=sudo; fi
 
 for cmd in tailscale jq python3 curl truncate ss; do
   if ! command -v "${cmd}" >/dev/null 2>&1; then
@@ -46,13 +46,13 @@ if "${SUDO}" tailscale funnel status 2>/dev/null | grep -q ":${FUNNEL_PORT}"; th
   exit 1
 fi
 
-DNS_NAME="\$("${SUDO}" tailscale status --json | jq -r ".Self.DNSName // empty" | sed "s/\\.$//")"
+DNS_NAME="$("${SUDO}" tailscale status --json | jq -r ".Self.DNSName // empty" | sed "s/\\.$//")"
 if [[ -z "${DNS_NAME}" ]]; then
   echo "Tailscale não está autenticado. Execute: sudo tailscale up"
   exit 1
 fi
 
-WORK_DIR="\$(mktemp -d /tmp/espelunca-media-test.XXXXXX)"
+WORK_DIR="$(mktemp -d /tmp/espelunca-media-test.XXXXXX)"
 SERVER_SCRIPT="${WORK_DIR}/server.py"
 FILE="${WORK_DIR}/payload.bin"
 RESULT="${WORK_DIR}/result.json"
@@ -124,9 +124,9 @@ PY
 
 export TEST_PORT RESULT_PATH="${RESULT}" SERVER_LOG="${LOG}"
 python3 "${SERVER_SCRIPT}" >/dev/null 2>&1 &
-SERVER_PID="\$!"
+SERVER_PID="$!"
 
-for _ in \$(seq 1 50); do
+for _ in $(seq 1 50); do
   if curl -fsS --max-time 2 "http://127.0.0.1:${TEST_PORT}/" >/dev/null 2>&1; then
     break
   fi
@@ -140,7 +140,7 @@ if ! curl -fsS --max-time 2 "http://127.0.0.1:${TEST_PORT}/" >/dev/null; then
 fi
 
 echo "==> Criando arquivo esparso de ${SIZE_MB} MB (decimal)"
-truncate -s "\$((SIZE_MB * 1000 * 1000))" "${FILE}"
+truncate -s "$((SIZE_MB * 1000 * 1000))" "${FILE}"
 
 echo "==> Ativando Funnel temporário em HTTPS ${FUNNEL_PORT}"
 "${SUDO}" tailscale funnel --bg --https="${FUNNEL_PORT}" "http://127.0.0.1:${TEST_PORT}"
@@ -148,14 +148,14 @@ echo "==> Ativando Funnel temporário em HTTPS ${FUNNEL_PORT}"
 URL="https://${DNS_NAME}:${FUNNEL_PORT}/upload-test"
 echo "==> Enviando ${SIZE_MB} MB para ${URL}"
 
-START_NS="\$(date +%s%N)"
-HTTP_CODE="\$(
+START_NS="$(date +%s%N)"
+HTTP_CODE="$(
   curl -sS --fail-with-body -o "${WORK_DIR}/response.json" -w "%{http_code}" \
     --data-binary "@${FILE}" "${URL}"
 )"
-END_NS="\$(date +%s%N)"
-ELAPSED_NS=\$((END_NS - START_NS))
-ELAPSED_SEC="\$(awk "BEGIN {printf \\"%.2f\\", ${ELAPSED_NS}/1000000000}")"
+END_NS="$(date +%s%N)"
+ELAPSED_NS=$((END_NS - START_NS))
+ELAPSED_SEC="$(awk "BEGIN {printf \\"%.2f\\", ${ELAPSED_NS}/1000000000}")"
 
 if [[ "${HTTP_CODE}" != "200" ]]; then
   echo "ERRO: HTTP ${HTTP_CODE}"
@@ -163,8 +163,8 @@ if [[ "${HTTP_CODE}" != "200" ]]; then
   exit 1
 fi
 
-EXPECTED=\$((SIZE_MB * 1000 * 1000))
-RECEIVED="\$(jq -r ".bytes // 0" "${RESULT}")"
+EXPECTED=$((SIZE_MB * 1000 * 1000))
+RECEIVED="$(jq -r ".bytes // 0" "${RESULT}")"
 
 if [[ "${RECEIVED}" != "${EXPECTED}" ]]; then
   echo "ERRO: servidor recebeu ${RECEIVED} bytes; esperado ${EXPECTED}."
