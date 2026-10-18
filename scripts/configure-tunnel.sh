@@ -11,6 +11,7 @@ set +a
 : "${PDS_HOSTNAME:?PDS_HOSTNAME não definido}"
 : "${PDS_PORT:?PDS_PORT não definido}"
 : "${WEB_PORT:?WEB_PORT não definido}"
+FEED_HOST="${FEEDGEN_HOSTNAME:-feeds.${PDS_HOSTNAME}}"
 
 if [[ "$(id -u)" -ne 0 ]]; then SUDO=sudo; else SUDO=; fi
 
@@ -28,12 +29,12 @@ TMP_CONFIG="$(mktemp "${CLOUDFLARED_CONFIG}.tmp.XXXXXX")"
 trap 'rm -f "${TMP_CONFIG}"' EXIT
 ${SUDO} cp "${CLOUDFLARED_CONFIG}" "${TMP_CONFIG}"
 
-python3 - "${TMP_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" <<'PY'
+python3 - "${TMP_CONFIG}" "${PDS_HOSTNAME}" "${PDS_PORT}" "${WEB_PORT}" "${FEED_HOST}" <<'PY'
 from pathlib import Path
 import sys
 
 path = Path(sys.argv[1])
-pds_host, pds_port, web_port = sys.argv[2:]
+pds_host, pds_port, web_port, feed_host = sys.argv[2:]
 text = path.read_text()
 
 if "ingress:" not in text:
@@ -43,7 +44,7 @@ lines = text.splitlines()
 start = next(i for i, line in enumerate(lines) if line.strip() == "ingress:")
 prefix = lines[:start + 1]
 existing = lines[start + 1:]
-managed = {pds_host, "*." + pds_host}
+managed = {pds_host, "*." + pds_host, feed_host}
 filtered = []
 i = 0
 
@@ -90,6 +91,8 @@ rules = [
     "    service: http://127.0.0.1:{}".format(pds_port),
     "  - hostname: {}".format(pds_host),
     "    service: http://127.0.0.1:{}".format(web_port),
+    "  - hostname: {}".format(feed_host),
+    "    service: http_status:404",
     "  - hostname: \"*.{}\"" .format(pds_host),
     "    service: http://127.0.0.1:{}".format(pds_port),
 ]
@@ -132,6 +135,7 @@ echo "  https://${PDS_HOSTNAME}/@atproto/oauth-provider/~api/* -> http://127.0.0
 echo "  https://${PDS_HOSTNAME}/account/* -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/oauth-client-metadata.json -> http://127.0.0.1:${PDS_PORT}"
 echo "  https://${PDS_HOSTNAME}/* -> http://127.0.0.1:${WEB_PORT}"
+echo "  https://${FEED_HOST}/* -> HTTP 404 (Feed Generator desativado)"
 echo "  https://*.${PDS_HOSTNAME} -> http://127.0.0.1:${PDS_PORT}"
 echo
 echo "Os registros DNS precisam existir no Cloudflare."

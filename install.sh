@@ -33,12 +33,11 @@ echo "PDS: https://${PDS_HOSTNAME}"
 echo "Site/Web: https://${PDS_HOSTNAME}"
 echo "PDS local: ${PDS_PORT}"
 echo "Web local: ${WEB_PORT}"
-echo "Feed local: ${FEEDGEN_PORT:-3200}"
 echo
 
 "${SCRIPT_DIR}/install-pds.sh"
 "${SCRIPT_DIR}/install-web.sh"
-"${SCRIPT_DIR}/install-feed-generator.sh"
+"${SCRIPT_DIR}/disable-legacy-feed.sh"
 
 echo
 echo "============================================================"

@@ -452,23 +452,24 @@ if count != 1:
     raise SystemExit("Não foi possível localizar followDids no StepFinished.")
 step_finished.write_text(text)
 
-# Pin the Espelunca BR feed for every account completing onboarding on this branded app.
-# The URI belongs to the public Feed Generator and is saved alongside the normal
-# Bluesky defaults. Re-running this script must not create duplicate entries.
-feed_import_anchor = """  ESPELUNCA_BR_FEED_URI,
-  DISCOVER_SAVED_FEED,"""
-if feed_import_anchor not in text:
-    raise SystemExit("Não foi possível localizar a importação do feed Espelunca.")
+# Retire the Espelunca BR feed from onboarding, recommendations and saved-feed preferences.
+constants = Path("src/lib/constants.ts")
+text = constants.read_text()
+text = re.sub(r"(?m)^export const ESPELUNCA_BR_FEED_URI = '[^']+'\n?", "", text)
+retired_uri = "export const RETIRED_ESPELUNCA_FEED_URI = 'at://did:plc:kafjdndx54b3wdlu6cbiwk42/app.bsky.feed.generator/espelunca-br'"
+if retired_uri not in text:
+    text = text.replace(desired_default, desired_default + "\n" + retired_uri, 1)
+if retired_uri not in text:
+    raise SystemExit("Não foi possível registrar a URI do feed desativado.")
+constants.write_text(text)
+
+step_finished = Path("src/screens/Onboarding/StepFinished/index.tsx")
+text = step_finished.read_text()
+text = re.sub(r"(?m)^  ESPELUNCA_BR_FEED_URI,\n", "", text, count=1)
 feeds_pattern = r"""          const feedsToSave: app\.bsky\.actor\.defs\.SavedFeed\[\] = \[.*?          \]\n\n          // Any Starter Pack feeds"""
-feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
+feeds_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = [
             {
               ...TIMELINE_SAVED_FEED,
-              id: TID.nextStr(),
-            },
-            {
-              type: 'feed',
-              value: ESPELUNCA_BR_FEED_URI,
-              pinned: true,
               id: TID.nextStr(),
             },
             {
@@ -478,282 +479,82 @@ feed_custom = """          const feedsToSave: app.bsky.actor.defs.SavedFeed[] = 
           ]
 
           // Any Starter Pack feeds"""
-text, count = re.subn(feeds_pattern, feed_custom, text, count=1, flags=re.DOTALL)
-if count != 1:
-    raise SystemExit("Não foi possível substituir a lista de feeds padrão no StepFinished.")
+text, count = re.subn(feeds_pattern, feeds_custom, text, count=1, flags=re.DOTALL)
+if count != 1 or "ESPELUNCA_BR_FEED_URI" in text:
+    raise SystemExit("Não foi possível remover o feed do onboarding.")
 step_finished.write_text(text)
 
-# The upstream account-creation flow also initializes feeds asynchronously.
-# Keep the same canonical order so it cannot race with onboarding and restore
-# a different default set.
 create_account = Path("src/state/session/create-account.ts")
 text = create_account.read_text()
-text = re.sub(
-    r"""  DISCOVER_SAVED_FEED,
-  IS_PROD_SERVICE,
-  TIMELINE_SAVED_FEED,""",
-    """  DISCOVER_SAVED_FEED,
-  ESPELUNCA_BR_FEED_URI,
-  IS_PROD_SERVICE,
-  TIMELINE_SAVED_FEED,""",
-    text,
-    count=1,
-)
+text = re.sub(r"(?m)^  ESPELUNCA_BR_FEED_URI,\n", "", text, count=1)
 create_feed_pattern = r"""function initializeSavedFeeds\(client: Client\) \{.*?\n\}"""
 create_feed_custom = """function initializeSavedFeeds(client: Client) {
   return retryPostSignupTask('set initial feeds', 1, () =>
     client.call(overwriteSavedFeeds, [
       {...TIMELINE_SAVED_FEED, id: TID.nextStr()},
-      {
-        type: 'feed',
-        value: ESPELUNCA_BR_FEED_URI,
-        pinned: true,
-        id: TID.nextStr(),
-      },
       {...DISCOVER_SAVED_FEED, id: TID.nextStr()},
     ]),
   )
 }"""
 text, count = re.subn(create_feed_pattern, create_feed_custom, text, count=1, flags=re.DOTALL)
-if count != 1:
-    raise SystemExit("Não foi possível substituir a inicialização de feeds do create-account.")
+if count != 1 or "ESPELUNCA_BR_FEED_URI" in text:
+    raise SystemExit("Não foi possível remover o feed do create-account.")
 create_account.write_text(text)
 
-# The shared HomeHeader is the final common rendering point for both
-# Home implementations. Canonicalize the tab order here as well, translating
-# indexes back to the underlying Pager order so tab presses remain correct.
-home_header = Path("src/view/com/home/HomeHeader.tsx")
-header_text = home_header.read_text()
-header_text = header_text.replace(
-    """import {TIMELINE_SAVED_FEED} from '#/lib/constants'""",
-    """import {
-  DISCOVER_FEED_URI,
-  ESPELUNCA_BR_FEED_URI,
-  TIMELINE_SAVED_FEED,
-} from '#/lib/constants'""",
-    1,
-)
-header_anchor = """  const {feeds, onSelect: onSelectProp} = props
-  const {hasSession} = useSession()
-"""
-header_custom = """  const {feeds, onSelect: onSelectProp} = props
-  const {hasSession} = useSession()
+preferences = Path("src/state/queries/preferences/index.ts")
+text = preferences.read_text()
+text = text.replace("import {PROD_DEFAULT_FEED} from '#/lib/constants'", "import {PROD_DEFAULT_FEED, RETIRED_ESPELUNCA_FEED_URI} from '#/lib/constants'", 1)
+preferences_anchor = """        const res = await client.call(getPreferences)
 
-  const orderedFeeds = useMemo(() => {
-    const indexed = feeds.map((feed, index) => ({feed, index}))
-    const feedKey = (uri: string) => uri.split('/').pop() || uri
-    const hasEspeluncaFeed = indexed.some(
-      ({feed}) => feedKey(feed.uri) === 'espelunca-br',
-    )
-    if (!hasEspeluncaFeed) {
-      return indexed
-    }
+        const labelerDids = res.moderationPrefs.labelers.map(l => l.did)"""
+preferences_replacement = """        const res = await client.call(getPreferences)
+        const retiredFeedIds = res.savedFeeds
+          .filter(feed => feed.value === RETIRED_ESPELUNCA_FEED_URI)
+          .map(feed => feed.id)
+        if (retiredFeedIds.length) {
+          try {
+            await client.call(removeSavedFeeds, retiredFeedIds)
+          } catch (error) {
+            console.warn('Unable to remove the retired Espelunca feed from saved preferences', error)
+          }
+        }
 
-    const rank = (feed: (typeof indexed)[number]['feed']) => {
-      const key = feedKey(feed.uri)
-      if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
-      if (key === 'espelunca-br') return 1
-      if (feed.uri === DISCOVER_FEED_URI || key === 'whats-hot') return 2
-      if (key === 'thevids') return 99
-      return 3
-    }
+        const labelerDids = res.moderationPrefs.labelers.map(l => l.did)"""
+if preferences_anchor not in text:
+    raise SystemExit("Não foi possível localizar o carregamento das preferências.")
+text = text.replace(preferences_anchor, preferences_replacement, 1)
+text = text.replace("savedFeeds: res.savedFeeds.filter(f => f.type !== 'unknown'),", "savedFeeds: res.savedFeeds.filter(\n            f => f.type !== 'unknown' && f.value !== RETIRED_ESPELUNCA_FEED_URI,\n          ),", 1)
+if "retiredFeedIds" not in text: raise SystemExit("Preferências não filtram o feed aposentado.")
+preferences.write_text(text)
 
-    return indexed.sort(
-      (a, b) => rank(a.feed) - rank(b.feed) || a.index - b.index,
-    )
-  }, [feeds])
-
-  const orderedFeedItems = orderedFeeds.map(({feed}) => feed)
-  const selectedPage = Math.max(
-    0,
-    orderedFeeds.findIndex(item => item.index === props.selectedPage),
-  )
-"""
-if header_anchor not in header_text:
-    raise SystemExit("Não encontrei o ponto comum do HomeHeader.")
-header_text = header_text.replace(header_anchor, header_custom, 1)
-header_text = header_text.replace(
-    "    return feeds.some(tab => {",
-    "    return orderedFeedItems.some(tab => {",
-    1,
-)
-header_text = header_text.replace(
-    "    const pinnedNames = feeds.map(f => getLocalizedFeedName(f, i18n))",
-    "    const pinnedNames = orderedFeedItems.map(f => getLocalizedFeedName(f, i18n))",
-    1,
-)
-header_text = header_text.replace(
-    "  }, [i18n, l, hasPinnedCustom, feeds])",
-    "  }, [i18n, l, hasPinnedCustom, orderedFeedItems])",
-    1,
-)
-header_text = header_text.replace(
-    "        onSelectProp(index)",
-    "        onSelectProp(orderedFeeds[index]?.index ?? index)",
-    1,
-)
-header_text = header_text.replace(
-    "        selectedPage={props.selectedPage}",
-    "        selectedPage={selectedPage}",
-    1,
-)
-if "orderedFeeds" not in header_text:
-    raise SystemExit("A ordenação do HomeHeader não foi aplicada.")
-home_header.write_text(header_text)
-
-# Canonicalize pinned feed order at the shared data-query layer. Both Home
-# implementations consume this query, so tabs and Pager pages receive the
-# exact same sequence instead of depending on UI-only sorting.
 feed_query = Path("src/state/queries/feed.ts")
 text = feed_query.read_text()
-text = text.replace(
-    "import {DISCOVER_FEED_URI, DISCOVER_SAVED_FEED} from '#/lib/constants'",
-    """import {
-  DISCOVER_FEED_URI,
-  DISCOVER_SAVED_FEED,
-  ESPELUNCA_BR_FEED_URI,
-  TIMELINE_SAVED_FEED,
-} from '#/lib/constants'""",
-    1,
-)
-feed_anchor = re.search(
-    r"(?m)^  const pinnedItems = .*savedFeeds\.filter\(feed => feed\.pinned\) .*?$",
-    text,
-)
-feed_custom = """  const pinnedItems = useMemo(() => {
-    const items = preferences?.savedFeeds.filter(feed => feed.pinned) ?? []
-    const feedKey = (value: string) => value.split('/').pop() || value
-    const hasEspeluncaFeed = items.some(
-      item => feedKey(item.value) === 'espelunca-br',
-    )
-    if (!hasEspeluncaFeed) {
-      return items
-    }
+text = text.replace("import {DISCOVER_FEED_URI, DISCOVER_SAVED_FEED} from '#/lib/constants'", "import {\n  DISCOVER_FEED_URI,\n  DISCOVER_SAVED_FEED,\n  RETIRED_ESPELUNCA_FEED_URI,\n} from '#/lib/constants'", 1)
+text, count = re.subn(r"return !alreadySaved && !decision\.ui\('contentList'\)\.filter", "return feed.uri !== RETIRED_ESPELUNCA_FEED_URI && !alreadySaved && !decision.ui('contentList').filter", text, count=1)
+if count != 1: raise SystemExit("Não foi possível filtrar recomendações.")
+search_anchor = """      if (moderationOpts) {
+        return data.feeds.filter(feed => {
+          const decision = moderateFeedGenerator(feed, moderationOpts)
+          return !decision.ui('contentMedia').blur
+        })
+      }
 
-    const rank = (item: (typeof items)[number]) => {
-      const key = feedKey(item.value)
-      if (item.value === TIMELINE_SAVED_FEED.value) return 0
-      if (key === 'espelunca-br') return 1
-      if (item.value === DISCOVER_FEED_URI || key === 'whats-hot') return 2
-      if (key === 'thevids') return 99
-      return 3
-    }
+      return data.feeds"""
+search_replacement = """      if (moderationOpts) {
+        return data.feeds.filter(feed => {
+          const decision = moderateFeedGenerator(feed, moderationOpts)
+          return feed.uri !== RETIRED_ESPELUNCA_FEED_URI && !decision.ui('contentMedia').blur
+        })
+      }
 
-    return items
-      .map((item, index) => ({item, index}))
-      .filter(({item}) => feedKey(item.value) !== 'thevids')
-      .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
-      .map(({item}) => item)
-  }, [preferences?.savedFeeds])
-"""
-if not feed_anchor:
-    raise SystemExit("Não foi possível localizar pinnedItems na feed query.")
-text = text[:feed_anchor.start()] + feed_custom.rstrip("\n") + "\n" + text[feed_anchor.end():]
+      return data.feeds.filter(feed => feed.uri !== RETIRED_ESPELUNCA_FEED_URI)"""
+if search_anchor not in text: raise SystemExit("Não foi possível localizar a busca de feeds.")
+text = text.replace(search_anchor, search_replacement, 1)
+text = text.replace("return !decision.ui('contentMedia').blur", "return feed.uri !== RETIRED_ESPELUNCA_FEED_URI && !decision.ui('contentMedia').blur", 1)
 feed_query.write_text(text)
+if "ESPELUNCA_BR_FEED_URI" in step_finished.read_text() or "ESPELUNCA_BR_FEED_URI" in create_account.read_text():
+    raise SystemExit("Onboarding mantém referência ao feed.")
 
-# Both the legacy Home and the active Following v2 Home can render the
-# Web home route. Keep their feed order identical.
-for home in [
-    Path("src/view/screens/Home.tsx"),
-    Path("src/features/followingV2/home/Home.tsx"),
-]:
-    text = home.read_text()
-    text = text.replace(
-        """  DISCOVER_FEED_URI,
-  PROD_DEFAULT_FEED,
-  TIMELINE_SAVED_FEED,""",
-        """  DISCOVER_FEED_URI,
-  ESPELUNCA_BR_FEED_URI,
-  PROD_DEFAULT_FEED,
-  TIMELINE_SAVED_FEED,""",
-        1,
-    )
-    home_anchor = """  const allFeeds = useMemo(
-    () => pinnedFeedInfos.map(f => f.feedDescriptor),
-    [pinnedFeedInfos],
-  )"""
-    home_custom = """  const orderedPinnedFeedInfos = useMemo(() => {
-    const rank = (feed: SavedFeedSourceInfo) => {
-      if (feed.uri === TIMELINE_SAVED_FEED.value) return 0
-      if (feed.uri === ESPELUNCA_BR_FEED_URI) return 1
-      if (feed.uri === DISCOVER_FEED_URI) return 2
-      return 3
-    }
-
-    return pinnedFeedInfos
-      .map((feed, index) => ({feed, index}))
-      .sort((a, b) => rank(a.feed) - rank(b.feed) || a.index - b.index)
-      .map(({feed}) => feed)
-  }, [pinnedFeedInfos])
-
-  const allFeeds = useMemo(
-    () => orderedPinnedFeedInfos.map(f => f.feedDescriptor),
-    [orderedPinnedFeedInfos],
-  )"""
-    if home_anchor not in text:
-        raise SystemExit(f"Não foi possível localizar a lista de feeds em {home}.")
-    text = text.replace(home_anchor, home_custom, 1)
-    text = text.replace(
-        "const selectedFeedInfo = pinnedFeedInfos[selectedIndex]",
-        "const selectedFeedInfo = orderedPinnedFeedInfos[selectedIndex]",
-        1,
-    )
-    text = text.replace(
-        "feeds={pinnedFeedInfos}",
-        "feeds={orderedPinnedFeedInfos}",
-        1,
-    )
-    text = text.replace(
-        "      {pinnedFeedInfos.length ? (",
-        "      {orderedPinnedFeedInfos.length ? (",
-        1,
-    )
-    text = text.replace(
-        "pinnedFeedInfos.map((feedInfo, index) => {",
-        "orderedPinnedFeedInfos.map((feedInfo, index) => {",
-        1,
-    )
-    if "orderedPinnedFeedInfos" not in text:
-        raise SystemExit(f"A ordenação da Home não foi aplicada em {home}.")
-    home.write_text(text)
-
-# Build-time hard checks: never ship a bundle with the official default feed
-# order or Video default accidentally restored by an upstream update.
-step_check = Path("src/screens/Onboarding/StepFinished/index.tsx").read_text()
-create_check = Path("src/state/session/create-account.ts").read_text()
-home_legacy_check = Path("src/view/screens/Home.tsx").read_text()
-home_v2_check = Path("src/features/followingV2/home/Home.tsx").read_text()
-feed_query_check = Path("src/state/queries/feed.ts").read_text()
-for name, source in [
-    ("StepFinished", step_check),
-    ("create-account", create_check),
-]:
-    if "value: ESPELUNCA_BR_FEED_URI" not in source:
-        raise SystemExit(f"Validação falhou: {name} não contém o Feed Espelunca BR.")
-    if re.search(r"\.\.\.VIDEO_SAVED_FEED", source):
-        raise SystemExit(f"Validação falhou: Video voltou ao conjunto padrão de {name}.")
-    if "TIMELINE_SAVED_FEED" not in source or "DISCOVER_SAVED_FEED" not in source:
-        raise SystemExit(f"Validação falhou: {name} perdeu os feeds padrão esperados.")
-    canonical_order = re.compile(
-        r"TIMELINE_SAVED_FEED.*ESPELUNCA_BR_FEED_URI.*DISCOVER_SAVED_FEED",
-        re.DOTALL,
-    )
-    if not canonical_order.search(source):
-        raise SystemExit(f"Validação falhou: {name} não está na ordem Seguindo → Espelunca BR → Discover.")
-
-if "ESPELUNCA_BR_FEED_URI" not in feed_query_check:
-    raise SystemExit("Validação falhou: feed query não contém o Feed Espelunca BR.")
-
-for name, source in [
-    ("Home legado", home_legacy_check),
-    ("Home Following v2", home_v2_check),
-]:
-    if "orderedPinnedFeedInfos" not in source:
-        raise SystemExit(f"Validação falhou: {name} não recebeu a ordenação canônica.")
-    if "feeds={orderedPinnedFeedInfos}" not in source:
-        raise SystemExit(f"Validação falhou: {name} não está usando a ordem canônica no cabeçalho.")
-    if "orderedPinnedFeedInfos.map((feedInfo, index) => {" not in source:
-        raise SystemExit(f"Validação falhou: {name} não está usando a ordem canônica nas páginas.")
 
 # Keep only the supported upstream trending behavior and our 10-topic limit.
 trends_query = Path("src/state/queries/trending/useGetTrendsQuery.ts")

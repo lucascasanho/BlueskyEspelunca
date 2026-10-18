@@ -13,6 +13,9 @@ set -a
 source "${CONFIG_FILE}"
 set +a
 
+echo "==> Desativando o Feed Generator antigo"
+"${ROOT_DIR}/scripts/disable-legacy-feed.sh"
+
 PDS_ENV_FILE="${PDS_DATA_DIR}/pds.env"
 
 set_pds_env() {
@@ -48,8 +51,5 @@ sudo systemctl restart espelunca-pds
 
 echo "==> Atualizando social-app e serviço Web"
 "${ROOT_DIR}/scripts/install-web.sh"
-echo "==> Atualizando Feed Generator"
-"${ROOT_DIR}/scripts/install-feed-generator.sh"
-
 echo
 echo "Atualização concluída."

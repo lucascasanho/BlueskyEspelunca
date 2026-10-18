@@ -204,54 +204,11 @@ O build Web cria também `dist/static/_expo -> ../_expo`, necessário para o lay
 
 Faça backup de `PDS_DATA_DIR` antes de atualizações de produção.
 
-## Feed personalizado Espelunca BR
+## Feed personalizado desativado
 
-A instalação inclui um Feed Generator separado do PDS/Web:
+O Feed Generator próprio da Espelunca.blue foi descontinuado. O comando bluesky update interrompe e desabilita o serviço antigo, remove seus arquivos, banco de dados e cache locais e configura feeds.espelunca.blue para responder HTTP 404 pelo Cloudflare Tunnel. A interface deixa de fixar esse feed em contas novas e remove a referência das preferências das contas existentes quando elas carregam o aplicativo atualizado.
 
-- Host público: `https://feeds.espelunca.blue`
-- Registro: `espelunca-br`
-- Porta local: `3200`
-- Filtro estrito de idioma `pt-BR`
-- Temas: notícias, memes brasileiros, tecnologia, Dead by Daylight, Fortnite e League of Legends
-- Bloqueio de domínios/paywalls e redirecionadores conhecidos
-- Filtro de marcadores explícitos de conteúdo gerado por IA
-- Classificação local de toxicidade e mídia sintética
-
-Comandos:
-
-```bash
-bluesky feed status
-bluesky feed publish
-bluesky feed seed
-bluesky feed logs
-bluesky feed tunnel
-```
-
-O Feed é independente do PDS e do Web. Seu banco e cache ficam em `/opt/espelunca-bluesky/feed-data`.
-
-### Feed padrão para novas contas
-
-O Web da Espelunca configura os feeds iniciais de novas contas com esta ordem:
-
-1. `Seguindo`
-2. `Espelunca BR`
-3. `Discover`
-
-A guia oficial `Video` não é incluída nos feeds padrão. Caso existam outros feeds fixados, eles permanecem depois desses três, na ordem original.
-
-Além de gravar essa ordem nas preferências da conta durante o onboarding, a Home do Web aplica a mesma ordenação visual para impedir que uma resposta inesperada do AppView altere a sequência exibida no topo.
-
-Essa personalização é aplicada ao fluxo de onboarding do `social-app` hospedado em `espelunca.blue`. Uma conta criada por um cliente externo, sem passar pelo Web da Espelunca, não recebe essa preferência automaticamente.
-
-A lista de paywalls é uma lista configurada de domínios conhecidos, não uma detecção universal de paywalls. A detecção de IA é probabilística. O modelo padrão de toxicidade é multilíngue e não inclui português em sua lista declarada de idiomas; por isso, essa camada não deve ser tratada como moderação perfeita para PT-BR.
-
-## Créditos adicionais do Feed
-
-- Bluesky Feed Generator Starter: `bluesky-social/feed-generator`
-- Jetstream: `@bsky/jetstream`
-- Transformers.js: `@huggingface/transformers`
-- Modelos ONNX da organização `onnx-community`
-
+O registro público AT Protocol app.bsky.feed.generator/espelunca-br pertence à conta que o publicou. Durante a atualização, o script verifica se o registro ainda existe e, se existir, oferece a remoção autenticada. Informe o handle da conta publicadora e uma App Password do Bluesky. A senha é lida sem eco, não é gravada em arquivo e a sessão criada para a operação é revogada ao final. Se a autenticação for pulada ou falhar, a desativação local continua, mas o registro público permanece até ser removido com autenticação válida.
 ## Android / iOS
 
 O mesmo clone do `social-app` é usado para desenvolvimento nativo. O WSL pode preparar o projeto Android, mas publicação iOS exige o ecossistema Apple/Xcode fora do WSL.
