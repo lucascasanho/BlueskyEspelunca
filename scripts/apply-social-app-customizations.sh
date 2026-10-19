@@ -142,10 +142,8 @@ text = text.replace(
 )
 server_input.write_text(text)
 
-# iOS Safari automatically zooms focused web inputs whose computed font size is
-# below 16 CSS px. The upstream TextField uses 15 px for text_md, and the login
-# screen autofocuses the username field. Keep the authentication fields at the
-# Safari-safe size on web without changing native app typography.
+# iOS Safari zooms focused web inputs whose computed font size is below 16 CSS px.
+# Match the current upstream component types instead of assuming every input is TextField.Input.
 login_form = Path("src/screens/Login/LoginForm.tsx")
 text = login_form.read_text()
 alf_import_pattern = r"(import\s*\{)([^}]*)(\}\s*from '#/alf')"
@@ -156,19 +154,43 @@ def add_web_import(match):
     trimmed = names.rstrip()
     separator = "" if trimmed.endswith(",") else ","
     return match.group(1) + trimmed + separator + " web" + match.group(3)
-
 text, import_count = re.subn(alf_import_pattern, add_web_import, text, count=1, flags=re.DOTALL)
 if import_count != 1:
     raise SystemExit("Não foi possível localizar o import de #/alf no LoginForm.")
 
-for test_id in ("loginUsernameInput", "loginPasswordInput", "loginAuthFactorTokenInput"):
-    pattern = rf'(<TextField\.Input\n\s+testID="{test_id}"\n)'
+for component, test_id in (
+    ("TextField\\.Input", "loginUsernameInput"),
+    ("PasswordField", "loginPasswordInput"),
+    ("TokenField", "loginAuthFactorTokenInput"),
+):
+    pattern = rf'(<{component}\b(?:(?!>).)*\btestID="{test_id}"\n)'
     replacement = r'\1            style={web({fontSize: 16})}' + "\n"
-    text, count = re.subn(pattern, replacement, text, count=1)
+    text, count = re.subn(pattern, replacement, text, count=1, flags=re.DOTALL)
     if count != 1:
         raise SystemExit(f"Não foi possível ajustar o font-size Safari de {test_id}.")
-
 login_form.write_text(text)
+
+# TokenField must forward the conditional style to its inner TextField.Input.
+token_field = Path("src/components/dialogs/EmailDialog/components/TokenField.tsx")
+text = token_field.read_text()
+text = text.replace(
+    "  testID,\n  autoFocus,",
+    "  testID,\n  style,\n  autoFocus,",
+    1,
+)
+text = text.replace(
+    "  | 'testID'\n  | 'autoFocus'",
+    "  | 'testID'\n  | 'style'\n  | 'autoFocus'",
+    1,
+)
+text = text.replace(
+    "        <TextField.Input\n          testID={testID}\n",
+    "        <TextField.Input\n          testID={testID}\n          style={style}\n",
+    1,
+)
+if "          style={style}" not in text or "  | 'style'" not in text:
+    raise SystemExit("Não foi possível encaminhar o estilo do TokenField.")
+token_field.write_text(text)
 
 # Default appearance: darkest theme. Users may still explicitly choose Light
 # or Dim in Appearance settings.
