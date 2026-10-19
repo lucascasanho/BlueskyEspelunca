@@ -148,11 +148,18 @@ server_input.write_text(text)
 # Safari-safe size on web without changing native app typography.
 login_form = Path("src/screens/Login/LoginForm.tsx")
 text = login_form.read_text()
-old_import = "import {atoms as a, native, tokens, useBreakpoints, useTheme} from '#/alf'"
-new_import = "import {atoms as a, native, tokens, useBreakpoints, useTheme, web} from '#/alf'"
-if old_import not in text:
+alf_import_pattern = r"(import\s*\{)([^}]*)(\}\s*from '#/alf')"
+def add_web_import(match):
+    names = match.group(2)
+    if re.search(r"\bweb\b", names):
+        return match.group(0)
+    trimmed = names.rstrip()
+    separator = "" if trimmed.endswith(",") else ","
+    return match.group(1) + trimmed + separator + " web" + match.group(3)
+
+text, import_count = re.subn(alf_import_pattern, add_web_import, text, count=1, flags=re.DOTALL)
+if import_count != 1:
     raise SystemExit("Não foi possível localizar o import de #/alf no LoginForm.")
-text = text.replace(old_import, new_import, 1)
 
 for test_id in ("loginUsernameInput", "loginPasswordInput", "loginAuthFactorTokenInput"):
     pattern = rf'(<TextField\.Input\n\s+testID="{test_id}"\n)'
